@@ -36,7 +36,7 @@ SGA_MID_HTTP_PORT=8080 RULER_URL=127.0.0.1:27017 SGA_MID_SOLICITUD_EVALUACION_SO
 ### Ejecución Dockerfile
 ```shell
 # docker build --tag=sga_mid_actualizacion_datos . --no-cache
-# docker run -p 80:80 sga_mid_tercero
+# docker run -p 80:80 sga_mid_actualizacion_datos
 ```
 
 ### Ejecución docker-compose
