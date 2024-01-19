@@ -8,7 +8,7 @@
 package routers
 
 import (
-	"sga_mid_actualizacion_datos/controllers"
+	"github.com/udistrital/sga_mid_actualizacion_datos/controllers"
 
 	"github.com/astaxie/beego"
 )
