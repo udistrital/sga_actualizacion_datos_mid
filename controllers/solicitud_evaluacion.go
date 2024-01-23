@@ -36,9 +36,9 @@ func (c *SolicitudEvaluacionController) URLMapping() {
 // @Param	id_solicitud	path	int	true	"Id de la solicitud"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /consultar_solicitud/solicitud/:id_solicitud [get]
+// @router /:solicitud_id [get]
 func (c *SolicitudEvaluacionController) GetDatosSolicitudById() {
-	id_solicitud := c.Ctx.Input.Param(":id_solicitud")
+	id_solicitud := c.Ctx.Input.Param(":solicitud_id")
 	var Solicitud map[string]interface{}
 	var TipoDocumentoGet map[string]interface{}
 	var TipoDocumentoActualGet map[string]interface{}
@@ -156,7 +156,7 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitudById() {
 // @Param   body        body    {}  true        "body Agregar una evolucion del estado a la solicitud planteada content"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /registrar_evolucion [post]
+// @router /evoluciones [post]
 func (c *SolicitudEvaluacionController) PostSolicitudEvolucionEstado() {
 	var Solicitud map[string]interface{}
 	var SolicitudAux map[string]interface{}
@@ -529,10 +529,10 @@ func (c *SolicitudEvaluacionController) PostSolicitudEvolucionEstado() {
 // @Param	id_estado_tipo_sol	path	int	true	"Id del estado tipo solicitud"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /consultar_solicitudes/:id_estado_tipo_sol [get]
+// @router /estados/:tipo_estado_id [get]
 func (c *SolicitudEvaluacionController) GetAllSolicitudActualizacionDatos() {
 	//Consulta a tabla de solicitante la cual trae toda la info de la solicitud
-	id_estado_tipo_sol := c.Ctx.Input.Param(":id_estado_tipo_sol")
+	id_estado_tipo_sol := c.Ctx.Input.Param(":tipo_estado_id")
 	var Solicitudes []map[string]interface{}
 	var TipoSolicitud map[string]interface{}
 	var Estado map[string]interface{}
@@ -661,10 +661,10 @@ func (c *SolicitudEvaluacionController) GetAllSolicitudActualizacionDatos() {
 // @Param	id_estado_tipo_solicitud	path	int	true	"Id del estado del tipo de solictud"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /consultar_solicitud/:id_persona/:id_estado_tipo_solicitud [get]
+// @router /estados/:tipo_estado_id/terceros/:tercero_id [get]
 func (c *SolicitudEvaluacionController) GetDatosSolicitud() {
-	id_persona := c.Ctx.Input.Param(":id_persona")
-	id_estado_tipo_solicitud := c.Ctx.Input.Param(":id_estado_tipo_solicitud")
+	id_persona := c.Ctx.Input.Param(":tercero_id")
+	id_estado_tipo_solicitud := c.Ctx.Input.Param(":tipo_estado_id")
 	var Solicitudes []map[string]interface{}
 	var TipoDocumentoGet map[string]interface{}
 	var resultado map[string]interface{}
@@ -747,9 +747,9 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitud() {
 // @Param	id_persona	path	int	true	"Id del estudiante"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /consultar_solicitud/:id_persona [get]
+// @router /terceros/:persona_id [get]
 func (c *SolicitudEvaluacionController) GetSolicitudActualizacionDatos() {
-	id_persona := c.Ctx.Input.Param(":id_persona")
+	id_persona := c.Ctx.Input.Param(":persona_id")
 	var Solicitudes []map[string]interface{}
 	var TipoSolicitud map[string]interface{}
 	var Estado map[string]interface{}
@@ -875,7 +875,7 @@ func (c *SolicitudEvaluacionController) GetSolicitudActualizacionDatos() {
 // @Param   body        body    {}  true        "body Agregar solicitud actualizacion datos content"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /registrar_solicitud [post]
+// @router / [post]
 func (c *SolicitudEvaluacionController) PostSolicitudActualizacionDatos() {
 	var Solicitud map[string]interface{}
 	var SolicitudPadre map[string]interface{}

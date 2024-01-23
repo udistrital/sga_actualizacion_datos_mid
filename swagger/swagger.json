@@ -15,18 +15,46 @@
     },
     "basePath": "/v1",
     "paths": {
-        "/solicitud_evaluacion/consultar_solicitud/solicitud/{id_solicitud}": {
+        "/solicitudes-evaluacion/": {
+            "post": {
+                "tags": [
+                    "solicitudes-evaluacion"
+                ],
+                "description": "Agregar una solicitud de actualizacion de datos(ID o nombre)",
+                "operationId": "SolicitudEvaluacionController.PostSolicitudActualizacionDatos",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body Agregar solicitud actualizacion datos content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/{}"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{}"
+                    },
+                    "403": {
+                        "description": "body is empty"
+                    }
+                }
+            }
+        },
+        "/solicitudes-evaluacion/estados/{tipo_estado_id}": {
             "get": {
                 "tags": [
-                    "solicitud_evaluacion"
+                    "solicitudes-evaluacion"
                 ],
-                "description": "Consultar los datos ingresados por el estudiante en su solicitud consultando por id de la solicitud",
-                "operationId": "SolicitudEvaluacionController.GetDatosSolicitudById",
+                "description": "Consultar todas la solicitudes de actualización de datos",
+                "operationId": "SolicitudEvaluacionController.GetAllSolicitudActualizacionDatos",
                 "parameters": [
                     {
                         "in": "path",
-                        "name": "id_solicitud",
-                        "description": "Id de la solicitud",
+                        "name": "id_estado_tipo_sol",
+                        "description": "Id del estado tipo solicitud",
                         "required": true,
                         "type": "integer",
                         "format": "int64"
@@ -42,37 +70,10 @@
                 }
             }
         },
-        "/solicitud_evaluacion/consultar_solicitud/{id_persona}": {
+        "/solicitudes-evaluacion/estados/{tipo_estado_id}/terceros/{tercero_id}": {
             "get": {
                 "tags": [
-                    "solicitud_evaluacion"
-                ],
-                "description": "Consultar la solicitudes de un estudiante de actualización de datos",
-                "operationId": "SolicitudEvaluacionController.GetSolicitudActualizacionDatos",
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "id_persona",
-                        "description": "Id del estudiante",
-                        "required": true,
-                        "type": "integer",
-                        "format": "int64"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "{}"
-                    },
-                    "403": {
-                        "description": "body is empty"
-                    }
-                }
-            }
-        },
-        "/solicitud_evaluacion/consultar_solicitud/{id_persona}/{id_estado_tipo_solicitud}": {
-            "get": {
-                "tags": [
-                    "solicitud_evaluacion"
+                    "solicitudes-evaluacion"
                 ],
                 "description": "Consultar los datos ingresados por el estudiante en su solicitud",
                 "operationId": "SolicitudEvaluacionController.GetDatosSolicitud",
@@ -104,37 +105,10 @@
                 }
             }
         },
-        "/solicitud_evaluacion/consultar_solicitudes/{id_estado_tipo_sol}": {
-            "get": {
-                "tags": [
-                    "solicitud_evaluacion"
-                ],
-                "description": "Consultar todas la solicitudes de actualización de datos",
-                "operationId": "SolicitudEvaluacionController.GetAllSolicitudActualizacionDatos",
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "id_estado_tipo_sol",
-                        "description": "Id del estado tipo solicitud",
-                        "required": true,
-                        "type": "integer",
-                        "format": "int64"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "{}"
-                    },
-                    "403": {
-                        "description": "body is empty"
-                    }
-                }
-            }
-        },
-        "/solicitud_evaluacion/registrar_evolucion": {
+        "/solicitudes-evaluacion/evoluciones": {
             "post": {
                 "tags": [
-                    "solicitud_evaluacion"
+                    "solicitudes-evaluacion"
                 ],
                 "description": "Agregar una evolucion del estado a la solicitud planteada",
                 "operationId": "SolicitudEvaluacionController.PostSolicitudEvolucionEstado",
@@ -159,22 +133,21 @@
                 }
             }
         },
-        "/solicitud_evaluacion/registrar_solicitud": {
-            "post": {
+        "/solicitudes-evaluacion/terceros/{persona_id}": {
+            "get": {
                 "tags": [
-                    "solicitud_evaluacion"
+                    "solicitudes-evaluacion"
                 ],
-                "description": "Agregar una solicitud de actualizacion de datos(ID o nombre)",
-                "operationId": "SolicitudEvaluacionController.PostSolicitudActualizacionDatos",
+                "description": "Consultar la solicitudes de un estudiante de actualización de datos",
+                "operationId": "SolicitudEvaluacionController.GetSolicitudActualizacionDatos",
                 "parameters": [
                     {
-                        "in": "body",
-                        "name": "body",
-                        "description": "body Agregar solicitud actualizacion datos content",
+                        "in": "path",
+                        "name": "id_persona",
+                        "description": "Id del estudiante",
                         "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/{}"
-                        }
+                        "type": "integer",
+                        "format": "int64"
                     }
                 ],
                 "responses": {
@@ -187,10 +160,10 @@
                 }
             }
         },
-        "/solicitud_evaluacion/{id}": {
+        "/solicitudes-evaluacion/{id}": {
             "get": {
                 "tags": [
-                    "solicitud_evaluacion"
+                    "solicitudes-evaluacion"
                 ],
                 "description": "actualiza de forma publica el estado de una solicitud tipo evaluacion",
                 "operationId": "SolicitudEvaluacionController.PutSolicitudEvaluacion",
@@ -200,6 +173,33 @@
                     },
                     "404": {
                         "description": "not found resource"
+                    }
+                }
+            }
+        },
+        "/solicitudes-evaluacion/{solicitud_id}": {
+            "get": {
+                "tags": [
+                    "solicitudes-evaluacion"
+                ],
+                "description": "Consultar los datos ingresados por el estudiante en su solicitud consultando por id de la solicitud",
+                "operationId": "SolicitudEvaluacionController.GetDatosSolicitudById",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id_solicitud",
+                        "description": "Id de la solicitud",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{}"
+                    },
+                    "403": {
+                        "description": "body is empty"
                     }
                 }
             }
@@ -213,7 +213,7 @@
     },
     "tags": [
         {
-            "name": "solicitud_evaluacion",
+            "name": "solicitudes-evaluacion",
             "description": "SolicitudEvaluacionController ...\n"
         }
     ]
