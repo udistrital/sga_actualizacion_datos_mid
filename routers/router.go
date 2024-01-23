@@ -1,6 +1,6 @@
 // @APIVersion 1.0.0
-// @Title beego Test API
-// @Description beego has a very cool tools to autogenerate documents for your API
+// @Title Microservicio SGA MID - Solicitudes de Evaluación
+// @Description Microservcio del SGA MID para solicitudes de actualización de datos - evaluación
 // @Contact astaxie@gmail.com
 // @TermsOfServiceUrl http://beego.me/
 // @License Apache 2.0
