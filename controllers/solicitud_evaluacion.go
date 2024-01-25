@@ -36,7 +36,7 @@ func (c *SolicitudEvaluacionController) URLMapping() {
 // @Param	id_solicitud	path	int	true	"Id de la solicitud"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /consultar_solicitud/solicitud/:id_solicitud [get]
+// @router /solicitudes/:id_solicitud [get]
 func (c *SolicitudEvaluacionController) GetDatosSolicitudById() {
 	id_solicitud := c.Ctx.Input.Param(":id_solicitud")
 	var Solicitud map[string]interface{}
@@ -156,7 +156,7 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitudById() {
 // @Param   body        body    {}  true        "body Agregar una evolucion del estado a la solicitud planteada content"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /registrar_evolucion [post]
+// @router /solicitudes/evoluciones [post]
 func (c *SolicitudEvaluacionController) PostSolicitudEvolucionEstado() {
 	var Solicitud map[string]interface{}
 	var SolicitudAux map[string]interface{}
@@ -525,14 +525,15 @@ func (c *SolicitudEvaluacionController) PostSolicitudEvolucionEstado() {
 
 // GetAllSolicitudActualizacionDatos ...
 // @Title GetAllSolicitudActualizacionDatos
-// @Description Consultar todas la solicitudes de actualización de datos
-// @Param	id_estado_tipo_sol	path	int	true	"Id del estado tipo solicitud"
+// @Description Consultar todas la solicitudes de actualización de datos filtradas por el id del tipo de solicitud
+// @Param	id_estado_tipo_solicitud	path	int	true	"Id del estado tipo solicitud"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /consultar_solicitudes/:id_estado_tipo_sol [get]
+// @router /solicitudes/estados/:id_estado_tipo_solicitud [get]
 func (c *SolicitudEvaluacionController) GetAllSolicitudActualizacionDatos() {
 	//Consulta a tabla de solicitante la cual trae toda la info de la solicitud
-	id_estado_tipo_sol := c.Ctx.Input.Param(":id_estado_tipo_sol")
+	idEstadoTipoSolicitud := c.Ctx.Input.Param(":id_estado_tipo_solicitud")
+
 	var Solicitudes []map[string]interface{}
 	var TipoSolicitud map[string]interface{}
 	var Estado map[string]interface{}
@@ -545,7 +546,7 @@ func (c *SolicitudEvaluacionController) GetAllSolicitudActualizacionDatos() {
 	var errorGetAll bool
 	alertas := append([]interface{}{})
 
-	errSolicitud := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitante?query=SolicitudId.EstadoTipoSolicitudId.Id:"+fmt.Sprintf("%v", id_estado_tipo_sol)+"&sortby:Id&order:asc&limit=0", &Solicitudes)
+	errSolicitud := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitante?query=SolicitudId.EstadoTipoSolicitudId.Id:"+fmt.Sprintf("%v", idEstadoTipoSolicitud)+"&sortby:Id&order:asc&limit=0", &Solicitudes)
 	if errSolicitud == nil {
 		if Solicitudes != nil && fmt.Sprintf("%v", Solicitudes[0]) != "map[]" {
 			respuesta = make([]map[string]interface{}, len(Solicitudes))
@@ -661,7 +662,7 @@ func (c *SolicitudEvaluacionController) GetAllSolicitudActualizacionDatos() {
 // @Param	id_estado_tipo_solicitud	path	int	true	"Id del estado del tipo de solictud"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /consultar_solicitud/:id_persona/:id_estado_tipo_solicitud [get]
+// @router /personas/:id_persona/solicitudes/estados/:id_estado_tipo_solicitud [get]
 func (c *SolicitudEvaluacionController) GetDatosSolicitud() {
 	id_persona := c.Ctx.Input.Param(":id_persona")
 	id_estado_tipo_solicitud := c.Ctx.Input.Param(":id_estado_tipo_solicitud")
@@ -747,20 +748,19 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitud() {
 // @Param	id_persona	path	int	true	"Id del estudiante"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /consultar_solicitud/:id_persona [get]
+// @router /personas/:id_persona/solicitudes [get]
 func (c *SolicitudEvaluacionController) GetSolicitudActualizacionDatos() {
 	id_persona := c.Ctx.Input.Param(":id_persona")
+	id_estado_tipo_solicitud := c.Ctx.Input.Param(":id_estado_tipo_solicitud")
 	var Solicitudes []map[string]interface{}
-	var TipoSolicitud map[string]interface{}
-	var Estado map[string]interface{}
-	var respuesta []map[string]interface{}
+	var TipoDocumentoGet map[string]interface{}
 	var resultado map[string]interface{}
 	resultado = make(map[string]interface{})
 	var alerta models.Alert
 	var errorGetAll bool
 	alertas := append([]interface{}{})
 
-	errSolicitud := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitante?query=TerceroId:"+id_persona+"&sortby=Id&order=asc&limit=0", &Solicitudes)
+	errSolicitud := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitante?query=TerceroId:"+id_persona+",SolicitudId.EstadoTipoSolicitudId.Id:"+id_estado_tipo_solicitud+"&limit=0", &Solicitudes)
 	if errSolicitud == nil {
 		if Solicitudes != nil && fmt.Sprintf("%v", Solicitudes[0]) != "map[]" {
 			respuesta = make([]map[string]interface{}, len(Solicitudes))
@@ -875,7 +875,7 @@ func (c *SolicitudEvaluacionController) GetSolicitudActualizacionDatos() {
 // @Param   body        body    {}  true        "body Agregar solicitud actualizacion datos content"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /registrar_solicitud [post]
+// @router /solicitudes [post]
 func (c *SolicitudEvaluacionController) PostSolicitudActualizacionDatos() {
 	var Solicitud map[string]interface{}
 	var SolicitudPadre map[string]interface{}
@@ -1062,12 +1062,13 @@ func (c *SolicitudEvaluacionController) PostSolicitudActualizacionDatos() {
 // PutSolicitudEvaluacion ...
 // @Title PutSolicitudEvaluacion
 // @Description actualiza de forma publica el estado de una solicitud tipo evaluacion
+// @Parama id_solicitud path int true "ID DE LA SOLICITUD"
 // @Success 200 {}
 // @Failure 404 not found resource
-// @router /:id [get]
+// @router /solicitudes/:id_solicitud/estado [get]
 func (c *SolicitudEvaluacionController) PutSolicitudEvaluacion() {
 	//Id de la solicitud
-	idSolicitud := c.Ctx.Input.Param(":id")
+	idSolicitud := c.Ctx.Input.Param(":id_solicitud")
 	//resultado resultado final
 	var resultadoPutSolicitud map[string]interface{}
 	resultadoRechazo := make(map[string]interface{})
