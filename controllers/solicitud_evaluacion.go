@@ -39,6 +39,7 @@ func (c *SolicitudEvaluacionController) URLMapping() {
 // @router /solicitudes/:id_solicitud [get]
 func (c *SolicitudEvaluacionController) GetDatosSolicitudById() {
 	id_solicitud := c.Ctx.Input.Param(":id_solicitud")
+	
 	var Solicitud map[string]interface{}
 	var TipoDocumentoGet map[string]interface{}
 	var TipoDocumentoActualGet map[string]interface{}
@@ -751,16 +752,17 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitud() {
 // @router /personas/:id_persona/solicitudes [get]
 func (c *SolicitudEvaluacionController) GetSolicitudActualizacionDatos() {
 	id_persona := c.Ctx.Input.Param(":id_persona")
-	id_estado_tipo_solicitud := c.Ctx.Input.Param(":id_estado_tipo_solicitud")
 	var Solicitudes []map[string]interface{}
-	var TipoDocumentoGet map[string]interface{}
+	var TipoSolicitud map[string]interface{}
+	var Estado map[string]interface{}
+	var respuesta []map[string]interface{}
 	var resultado map[string]interface{}
 	resultado = make(map[string]interface{})
 	var alerta models.Alert
 	var errorGetAll bool
 	alertas := append([]interface{}{})
 
-	errSolicitud := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitante?query=TerceroId:"+id_persona+",SolicitudId.EstadoTipoSolicitudId.Id:"+id_estado_tipo_solicitud+"&limit=0", &Solicitudes)
+	errSolicitud := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitante?query=TerceroId:"+id_persona+"&sortby=Id&order=asc&limit=0", &Solicitudes)
 	if errSolicitud == nil {
 		if Solicitudes != nil && fmt.Sprintf("%v", Solicitudes[0]) != "map[]" {
 			respuesta = make([]map[string]interface{}, len(Solicitudes))
