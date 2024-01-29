@@ -120,8 +120,10 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitudById() {
 	}
 
 	if !errorGetAll {
+		c.Ctx.Output.SetStatus(200)
 		c.Data["json"] = requestresponse.APIResponseDTO(true, 200, resultado)
 	} else {
+		c.Ctx.Output.SetStatus(400)
 		c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, message)
 	}
 
@@ -398,8 +400,10 @@ func (c *SolicitudEvaluacionController) PostSolicitudEvolucionEstado() {
 	}
 
 	if !errorGetAll {
+		c.Ctx.Output.SetStatus(200)
 		c.Data["json"] = requestresponse.APIResponseDTO(true, 200, resultado)
 	} else {
+		c.Ctx.Output.SetStatus(400)
 		c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, message)
 	}
 
@@ -496,8 +500,10 @@ func (c *SolicitudEvaluacionController) GetAllSolicitudActualizacionDatos() {
 	}
 
 	if !errorGetAll {
+		c.Ctx.Output.SetStatus(200)
 		c.Data["json"] = requestresponse.APIResponseDTO(true, 200, respuesta)
 	} else {
+		c.Ctx.Output.SetStatus(400)
 		c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, message)
 	}
 
@@ -566,9 +572,11 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitud() {
 	}
 
 	if errorGetAll {
+		c.Ctx.Output.SetStatus(400)
         response := requestresponse.APIResponseDTO(false, 400, nil, message)
         c.Data["json"] = response
     } else {
+		c.Ctx.Output.SetStatus(200)
         response := requestresponse.APIResponseDTO(true, 200, resultado)
         c.Data["json"] = response
     }
@@ -593,9 +601,11 @@ func (c *SolicitudEvaluacionController) GetSolicitudActualizacionDatos() {
     errSolicitud := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitante?query=TerceroId:"+id_persona+"&sortby=Id&order=asc&limit=0", &Solicitudes)
     if errSolicitud != nil {
         // En caso de error en la solicitud
+		c.Ctx.Output.SetStatus(http.StatusBadRequest)
         c.Data["json"] = requestresponse.APIResponseDTO(false, http.StatusBadRequest, nil, errSolicitud.Error())
     } else if Solicitudes == nil || fmt.Sprintf("%v", Solicitudes[0]) == "map[]" {
         // Si no se encuentran datos
+		c.Ctx.Output.SetStatus(http.StatusNotFound)
         c.Data["json"] = requestresponse.APIResponseDTO(false, http.StatusNotFound, nil, "No data found")
     } else {
         // Procesamiento de la respuesta exitosa
@@ -627,6 +637,7 @@ func (c *SolicitudEvaluacionController) GetSolicitudActualizacionDatos() {
                 "TerceroId":   id_persona,
             }
         }
+		c.Ctx.Output.SetStatus(http.StatusOK)
         c.Data["json"] = requestresponse.APIResponseDTO(true, http.StatusOK, respuesta)
     }
 
@@ -807,11 +818,14 @@ func (c *SolicitudEvaluacionController) PostSolicitudActualizacionDatos() {
 		}
 
 		if !errorGetAll {
+			c.Ctx.Output.SetStatus(200)
 			c.Data["json"] = requestresponse.APIResponseDTO(true, 200, resultado)
 		} else {
+			c.Ctx.Output.SetStatus(400)
 			c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, errSolicitud.Error())
 		}
 	} else {
+		c.Ctx.Output.SetStatus(403)
 		c.Data["json"] = requestresponse.APIResponseDTO(false, 403, nil, "Error al procesar la solicitud: "+err.Error())
 	}
 
@@ -834,12 +848,14 @@ func (c *SolicitudEvaluacionController) PutSolicitudEvaluacion() {
     solicitudEvaluacionList, errGet := models.GetOneSolicitudDocente(idSolicitud)
     if errGet != nil {
         logs.Error(errGet)
+		c.Ctx.Output.SetStatus(400)
         c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, "Error al obtener la solicitud")
         c.ServeJSON()
         return
     }
 
     if len(solicitudEvaluacionList) == 0 {
+		c.Ctx.Output.SetStatus(404)
         c.Data["json"] = requestresponse.APIResponseDTO(false, 404, nil, "No se encontró la solicitud")
         c.ServeJSON()
         return
@@ -850,18 +866,22 @@ func (c *SolicitudEvaluacionController) PutSolicitudEvaluacion() {
     
     if estadoID == "11" {
         mensaje := "La invitación ya ha sido rechazada anteriormente, por favor cierre la pestaña o ventana"
+		c.Ctx.Output.SetStatus(400)
         c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, mensaje)
     } else {
         if solicitudReject, errPrepared := models.PreparedRejectState(solicitudEvaluacion); errPrepared == nil {
             if _, errPut := models.PutSolicitudDocente(solicitudReject, idSolicitud); errPut == nil {
                 mensaje := "La invitación ha sido rechazada, por favor cierre la pestaña o ventana"
+				c.Ctx.Output.SetStatus(200)
                 c.Data["json"] = requestresponse.APIResponseDTO(true, 200, nil, mensaje)
             } else {
                 logs.Error(errPut)
+				c.Ctx.Output.SetStatus(400)
                 c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, "Error al actualizar la solicitud")
             }
         } else {
             logs.Error(errPrepared)
+			c.Ctx.Output.SetStatus(400)
             c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, "Error al preparar el estado de rechazo")
         }
     }
