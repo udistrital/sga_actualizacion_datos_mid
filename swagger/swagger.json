@@ -1,8 +1,8 @@
 {
     "swagger": "2.0",
     "info": {
-        "title": "beego Test API",
-        "description": "beego has a very cool tools to autogenerate documents for your API",
+        "title": "Microservicio SGA MID - Solicitudes de Evaluación",
+        "description": "Microservcio del SGA MID para solicitudes de actualización de datos - evaluación",
         "version": "1.0.0",
         "termsOfService": "http://beego.me/",
         "contact": {
@@ -20,13 +20,13 @@
                 "tags": [
                     "actualizaciones-datos"
                 ],
-                "description": "Consultar la solicitudes de un estudiante de actualización de datos",
-                "operationId": "SolicitudEvaluacionController.GetSolicitudActualizacionDatos",
+                "description": "Consultar todas la solicitudes de actualización de datos",
+                "operationId": "SolicitudEvaluacionController.GetAllSolicitudActualizacionDatos",
                 "parameters": [
                     {
                         "in": "path",
-                        "name": "id_persona",
-                        "description": "Id del estudiante",
+                        "name": "id_estado_tipo_sol",
+                        "description": "Id del estado tipo solicitud",
                         "required": true,
                         "type": "integer",
                         "format": "int64"
@@ -210,6 +210,33 @@
                     },
                     "404": {
                         "description": "not found resource"
+                    }
+                }
+            }
+        },
+        "/solicitudes-evaluacion/{solicitud_id}": {
+            "get": {
+                "tags": [
+                    "solicitudes-evaluacion"
+                ],
+                "description": "Consultar los datos ingresados por el estudiante en su solicitud consultando por id de la solicitud",
+                "operationId": "SolicitudEvaluacionController.GetDatosSolicitudById",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id_solicitud",
+                        "description": "Id de la solicitud",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{}"
+                    },
+                    "403": {
+                        "description": "body is empty"
                     }
                 }
             }

@@ -3,17 +3,18 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
-	"net/http"
+
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
 	"github.com/udistrital/sga_mid_actualizacion_datos/models"
+	"github.com/udistrital/utils_oas/errorhandler"
 	"github.com/udistrital/utils_oas/formatdata"
 	"github.com/udistrital/utils_oas/request"
-	"github.com/udistrital/utils_oas/time_bogota"
-	"github.com/udistrital/utils_oas/errorhandler"
 	"github.com/udistrital/utils_oas/requestresponse"
+	"github.com/udistrital/utils_oas/time_bogota"
 )
 
 // SolicitudEvaluacionController ...
@@ -43,7 +44,7 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitudById() {
 	defer errorhandler.HandlePanic(&c.Controller)
 
 	id_solicitud := c.Ctx.Input.Param(":id_solicitud")
-	
+
 	var Solicitud map[string]interface{}
 	var TipoDocumentoGet map[string]interface{}
 	var TipoDocumentoActualGet map[string]interface{}
@@ -245,7 +246,8 @@ func (c *SolicitudEvaluacionController) PostSolicitudEvolucionEstado() {
 												}
 											} else {
 												errorGetAll = true
-												message = errSolicitudAux.Error()											}
+												message = errSolicitudAux.Error()
+											}
 										}
 
 										// En caso de que la solicitud sea aprobada se traen los datos a cambiar y se hace POST a la respectiva tabla
@@ -573,13 +575,13 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitud() {
 
 	if errorGetAll {
 		c.Ctx.Output.SetStatus(400)
-        response := requestresponse.APIResponseDTO(false, 400, nil, message)
-        c.Data["json"] = response
-    } else {
+		response := requestresponse.APIResponseDTO(false, 400, nil, message)
+		c.Data["json"] = response
+	} else {
 		c.Ctx.Output.SetStatus(200)
-        response := requestresponse.APIResponseDTO(true, 200, resultado)
-        c.Data["json"] = response
-    }
+		response := requestresponse.APIResponseDTO(true, 200, resultado)
+		c.Data["json"] = response
+	}
 
 	c.ServeJSON()
 }
@@ -595,51 +597,51 @@ func (c *SolicitudEvaluacionController) GetSolicitudActualizacionDatos() {
 	defer errorhandler.HandlePanic(&c.Controller)
 
 	id_persona := c.Ctx.Input.Param(":id_persona")
-    var Solicitudes []map[string]interface{}
-    var respuesta []map[string]interface{}
+	var Solicitudes []map[string]interface{}
+	var respuesta []map[string]interface{}
 
-    errSolicitud := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitante?query=TerceroId:"+id_persona+"&sortby=Id&order=asc&limit=0", &Solicitudes)
-    if errSolicitud != nil {
-        // En caso de error en la solicitud
+	errSolicitud := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitante?query=TerceroId:"+id_persona+"&sortby=Id&order=asc&limit=0", &Solicitudes)
+	if errSolicitud != nil {
+		// En caso de error en la solicitud
 		c.Ctx.Output.SetStatus(http.StatusBadRequest)
-        c.Data["json"] = requestresponse.APIResponseDTO(false, http.StatusBadRequest, nil, errSolicitud.Error())
-    } else if Solicitudes == nil || fmt.Sprintf("%v", Solicitudes[0]) == "map[]" {
-        // Si no se encuentran datos
+		c.Data["json"] = requestresponse.APIResponseDTO(false, http.StatusBadRequest, nil, errSolicitud.Error())
+	} else if Solicitudes == nil || fmt.Sprintf("%v", Solicitudes[0]) == "map[]" {
+		// Si no se encuentran datos
 		c.Ctx.Output.SetStatus(http.StatusNotFound)
-        c.Data["json"] = requestresponse.APIResponseDTO(false, http.StatusNotFound, nil, "No data found")
-    } else {
-        // Procesamiento de la respuesta exitosa
-        respuesta = make([]map[string]interface{}, len(Solicitudes))
-        for i, solicitud := range Solicitudes {
-            IdTipoSolicitud := fmt.Sprintf("%v", solicitud["SolicitudId"].(map[string]interface{})["EstadoTipoSolicitudId"].(map[string]interface{})["TipoSolicitud"].(map[string]interface{})["Id"])
-            var TipoSolicitud, Estado map[string]interface{}
+		c.Data["json"] = requestresponse.APIResponseDTO(false, http.StatusNotFound, nil, "No data found")
+	} else {
+		// Procesamiento de la respuesta exitosa
+		respuesta = make([]map[string]interface{}, len(Solicitudes))
+		for i, solicitud := range Solicitudes {
+			IdTipoSolicitud := fmt.Sprintf("%v", solicitud["SolicitudId"].(map[string]interface{})["EstadoTipoSolicitudId"].(map[string]interface{})["TipoSolicitud"].(map[string]interface{})["Id"])
+			var TipoSolicitud, Estado map[string]interface{}
 
-            // Obteniendo información adicional de la solicitud
-            request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"tipo_solicitud/"+IdTipoSolicitud, &TipoSolicitud)
-            IdEstado := fmt.Sprintf("%v", solicitud["SolicitudId"].(map[string]interface{})["EstadoTipoSolicitudId"].(map[string]interface{})["EstadoId"].(map[string]interface{})["Id"])
-            request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"estado/"+IdEstado, &Estado)
+			// Obteniendo información adicional de la solicitud
+			request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"tipo_solicitud/"+IdTipoSolicitud, &TipoSolicitud)
+			IdEstado := fmt.Sprintf("%v", solicitud["SolicitudId"].(map[string]interface{})["EstadoTipoSolicitudId"].(map[string]interface{})["EstadoId"].(map[string]interface{})["Id"])
+			request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"estado/"+IdEstado, &Estado)
 
-            var Observacion []map[string]interface{}
-            IdSolicitud := fmt.Sprintf("%v", solicitud["SolicitudId"].(map[string]interface{})["Id"])
-            request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"observacion?query=SolicitudId:"+IdSolicitud+",TerceroId:"+id_persona, &Observacion)
+			var Observacion []map[string]interface{}
+			IdSolicitud := fmt.Sprintf("%v", solicitud["SolicitudId"].(map[string]interface{})["Id"])
+			request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"observacion?query=SolicitudId:"+IdSolicitud+",TerceroId:"+id_persona, &Observacion)
 
-            observacion := ""
-            if Observacion != nil && fmt.Sprintf("%v", Observacion[0]) != "map[]" {
-                observacion = Observacion[0]["Valor"].(string)
-            }
+			observacion := ""
+			if Observacion != nil && fmt.Sprintf("%v", Observacion[0]) != "map[]" {
+				observacion = Observacion[0]["Valor"].(string)
+			}
 
-            respuesta[i] = map[string]interface{}{
-                "Numero":      solicitud["SolicitudId"].(map[string]interface{})["Id"],
-                "Fecha":       solicitud["SolicitudId"].(map[string]interface{})["FechaRadicacion"],
-                "Tipo":        TipoSolicitud["Data"].(map[string]interface{})["Nombre"],
-                "Estado":      Estado["Data"].(map[string]interface{})["Nombre"],
-                "Observacion": observacion,
-                "TerceroId":   id_persona,
-            }
-        }
+			respuesta[i] = map[string]interface{}{
+				"Numero":      solicitud["SolicitudId"].(map[string]interface{})["Id"],
+				"Fecha":       solicitud["SolicitudId"].(map[string]interface{})["FechaRadicacion"],
+				"Tipo":        TipoSolicitud["Data"].(map[string]interface{})["Nombre"],
+				"Estado":      Estado["Data"].(map[string]interface{})["Nombre"],
+				"Observacion": observacion,
+				"TerceroId":   id_persona,
+			}
+		}
 		c.Ctx.Output.SetStatus(http.StatusOK)
-        c.Data["json"] = requestresponse.APIResponseDTO(true, http.StatusOK, respuesta)
-    }
+		c.Data["json"] = requestresponse.APIResponseDTO(true, http.StatusOK, respuesta)
+	}
 
 	c.ServeJSON()
 }
@@ -843,48 +845,48 @@ func (c *SolicitudEvaluacionController) PutSolicitudEvaluacion() {
 	defer errorhandler.HandlePanic(&c.Controller)
 
 	//Id de la solicitud
-    idSolicitud := c.Ctx.Input.Param(":id_solicitud")
+	idSolicitud := c.Ctx.Input.Param(":id_solicitud")
 
-    solicitudEvaluacionList, errGet := models.GetOneSolicitudDocente(idSolicitud)
-    if errGet != nil {
-        logs.Error(errGet)
+	solicitudEvaluacionList, errGet := models.GetOneSolicitudDocente(idSolicitud)
+	if errGet != nil {
+		logs.Error(errGet)
 		c.Ctx.Output.SetStatus(400)
-        c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, "Error al obtener la solicitud")
-        c.ServeJSON()
-        return
-    }
+		c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, "Error al obtener la solicitud")
+		c.ServeJSON()
+		return
+	}
 
-    if len(solicitudEvaluacionList) == 0 {
+	if len(solicitudEvaluacionList) == 0 {
 		c.Ctx.Output.SetStatus(404)
-        c.Data["json"] = requestresponse.APIResponseDTO(false, 404, nil, "No se encontró la solicitud")
-        c.ServeJSON()
-        return
-    }
+		c.Data["json"] = requestresponse.APIResponseDTO(false, 404, nil, "No se encontró la solicitud")
+		c.ServeJSON()
+		return
+	}
 
-    solicitudEvaluacion := solicitudEvaluacionList[0].(map[string]interface{})
-    estadoID := fmt.Sprintf("%v", solicitudEvaluacion["EstadoTipoSolicitudId"].(map[string]interface{})["EstadoId"].(map[string]interface{})["Id"])
-    
-    if estadoID == "11" {
-        mensaje := "La invitación ya ha sido rechazada anteriormente, por favor cierre la pestaña o ventana"
+	solicitudEvaluacion := solicitudEvaluacionList[0].(map[string]interface{})
+	estadoID := fmt.Sprintf("%v", solicitudEvaluacion["EstadoTipoSolicitudId"].(map[string]interface{})["EstadoId"].(map[string]interface{})["Id"])
+
+	if estadoID == "11" {
+		mensaje := "La invitación ya ha sido rechazada anteriormente, por favor cierre la pestaña o ventana"
 		c.Ctx.Output.SetStatus(400)
-        c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, mensaje)
-    } else {
-        if solicitudReject, errPrepared := models.PreparedRejectState(solicitudEvaluacion); errPrepared == nil {
-            if _, errPut := models.PutSolicitudDocente(solicitudReject, idSolicitud); errPut == nil {
-                mensaje := "La invitación ha sido rechazada, por favor cierre la pestaña o ventana"
+		c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, mensaje)
+	} else {
+		if solicitudReject, errPrepared := models.PreparedRejectState(solicitudEvaluacion); errPrepared == nil {
+			if _, errPut := models.PutSolicitudDocente(solicitudReject, idSolicitud); errPut == nil {
+				mensaje := "La invitación ha sido rechazada, por favor cierre la pestaña o ventana"
 				c.Ctx.Output.SetStatus(200)
-                c.Data["json"] = requestresponse.APIResponseDTO(true, 200, nil, mensaje)
-            } else {
-                logs.Error(errPut)
+				c.Data["json"] = requestresponse.APIResponseDTO(true, 200, nil, mensaje)
+			} else {
+				logs.Error(errPut)
 				c.Ctx.Output.SetStatus(400)
-                c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, "Error al actualizar la solicitud")
-            }
-        } else {
-            logs.Error(errPrepared)
+				c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, "Error al actualizar la solicitud")
+			}
+		} else {
+			logs.Error(errPrepared)
 			c.Ctx.Output.SetStatus(400)
-            c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, "Error al preparar el estado de rechazo")
-        }
-    }
+			c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, "Error al preparar el estado de rechazo")
+		}
+	}
 
-    c.ServeJSON()
+	c.ServeJSON()
 }
