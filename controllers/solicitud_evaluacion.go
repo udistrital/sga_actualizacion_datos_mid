@@ -3,14 +3,17 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
 	"github.com/udistrital/sga_mid_actualizacion_datos/models"
+	"github.com/udistrital/utils_oas/errorhandler"
 	"github.com/udistrital/utils_oas/formatdata"
 	"github.com/udistrital/utils_oas/request"
+	"github.com/udistrital/utils_oas/requestresponse"
 	"github.com/udistrital/utils_oas/time_bogota"
 )
 
@@ -36,17 +39,19 @@ func (c *SolicitudEvaluacionController) URLMapping() {
 // @Param	id_solicitud	path	int	true	"Id de la solicitud"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /:solicitud_id [get]
+// @router /solicitudes/:id_solicitud [get]
 func (c *SolicitudEvaluacionController) GetDatosSolicitudById() {
-	id_solicitud := c.Ctx.Input.Param(":solicitud_id")
+	defer errorhandler.HandlePanic(&c.Controller)
+
+	id_solicitud := c.Ctx.Input.Param(":id_solicitud")
+
 	var Solicitud map[string]interface{}
 	var TipoDocumentoGet map[string]interface{}
 	var TipoDocumentoActualGet map[string]interface{}
 	var resultado map[string]interface{}
 	resultado = make(map[string]interface{})
-	var alerta models.Alert
 	var errorGetAll bool
-	alertas := append([]interface{}{})
+	var message string
 
 	errSolicitud := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitud/"+id_solicitud, &Solicitud)
 	if errSolicitud == nil {
@@ -75,19 +80,11 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitudById() {
 							}
 						} else {
 							errorGetAll = true
-							alertas = append(alertas, "No data found")
-							alerta.Code = "404"
-							alerta.Type = "error"
-							alerta.Body = alertas
-							c.Data["json"] = map[string]interface{}{"Response": alerta}
+							message = "No data found"
 						}
 					} else {
 						errorGetAll = true
-						alertas = append(alertas, errTipoDocumento.Error())
-						alerta.Code = "400"
-						alerta.Type = "error"
-						alerta.Body = alertas
-						c.Data["json"] = map[string]interface{}{"Response": alerta}
+						message = errTipoDocumento.Error()
 					}
 
 					TipoDocumentoAux := fmt.Sprintf("%v", ReferenciaJson["DatosNuevos"].(map[string]interface{})["TipoDocumentoNuevo"].(map[string]interface{})["Id"])
@@ -100,19 +97,11 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitudById() {
 							}
 						} else {
 							errorGetAll = true
-							alertas = append(alertas, "No data found")
-							alerta.Code = "404"
-							alerta.Type = "error"
-							alerta.Body = alertas
-							c.Data["json"] = map[string]interface{}{"Response": alerta}
+							message = "No data found"
 						}
 					} else {
 						errorGetAll = true
-						alertas = append(alertas, errTipoDocumento.Error())
-						alerta.Code = "400"
-						alerta.Type = "error"
-						alerta.Body = alertas
-						c.Data["json"] = map[string]interface{}{"Response": alerta}
+						message = errTipoDocumento.Error()
 					}
 				} else if TipoSolicitudId == 16 || TipoSolicitudId == 18 || TipoSolicitudId == 19 || TipoSolicitudId == 32 {
 					resultado["NombreActual"] = ReferenciaJson["DatosAnteriores"].(map[string]interface{})["NombreActual"]
@@ -124,27 +113,19 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitudById() {
 			}
 		} else {
 			errorGetAll = true
-			alertas = append(alertas, "No data found")
-			alerta.Code = "404"
-			alerta.Type = "error"
-			alerta.Body = alertas
-			c.Data["json"] = map[string]interface{}{"Response": alerta}
+			message = "No data found"
 		}
 	} else {
 		errorGetAll = true
-		alertas = append(alertas, errSolicitud.Error())
-		alerta.Code = "400"
-		alerta.Type = "error"
-		alerta.Body = alertas
-		c.Data["json"] = map[string]interface{}{"Response": alerta}
+		message = errSolicitud.Error()
 	}
 
 	if !errorGetAll {
-		alertas = append(alertas, resultado)
-		alerta.Code = "200"
-		alerta.Type = "OK"
-		alerta.Body = alertas
-		c.Data["json"] = map[string]interface{}{"Response": alerta}
+		c.Ctx.Output.SetStatus(200)
+		c.Data["json"] = requestresponse.APIResponseDTO(true, 200, resultado)
+	} else {
+		c.Ctx.Output.SetStatus(400)
+		c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, message)
 	}
 
 	c.ServeJSON()
@@ -156,8 +137,10 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitudById() {
 // @Param   body        body    {}  true        "body Agregar una evolucion del estado a la solicitud planteada content"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /evoluciones [post]
+// @router /solicitudes/evoluciones [post]
 func (c *SolicitudEvaluacionController) PostSolicitudEvolucionEstado() {
+	defer errorhandler.HandlePanic(&c.Controller)
+
 	var Solicitud map[string]interface{}
 	var SolicitudAux map[string]interface{}
 	var SolicitudAuxPost map[string]interface{}
@@ -172,10 +155,9 @@ func (c *SolicitudEvaluacionController) PostSolicitudEvolucionEstado() {
 	var DatosIdentificacionPut map[string]interface{}
 	var DatosIdentificacionPost map[string]interface{}
 	var resultado map[string]interface{}
+	var message string
 	resultado = make(map[string]interface{})
-	var alerta models.Alert
 	var errorGetAll bool
-	alertas := append([]interface{}{})
 
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &Solicitud); err == nil {
 		SolicitudId := fmt.Sprintf("%v", Solicitud["SolicitudId"])
@@ -260,19 +242,11 @@ func (c *SolicitudEvaluacionController) PostSolicitudEvolucionEstado() {
 												if ObservacionPost != nil && fmt.Sprintf("%v", ObservacionPost) != "map[]" {
 												} else {
 													errorGetAll = true
-													alertas = append(alertas, "No data found")
-													alerta.Code = "404"
-													alerta.Type = "error"
-													alerta.Body = alertas
-													c.Data["json"] = map[string]interface{}{"Response": alerta}
+													message = "No data found"
 												}
 											} else {
 												errorGetAll = true
-												alertas = append(alertas, errSolicitudAux.Error())
-												alerta.Code = "400"
-												alerta.Type = "error"
-												alerta.Body = alertas
-												c.Data["json"] = map[string]interface{}{"Response": alerta}
+												message = errSolicitudAux.Error()
 											}
 										}
 
@@ -312,51 +286,27 @@ func (c *SolicitudEvaluacionController) PostSolicitudEvolucionEstado() {
 																					formatdata.JsonPrint(DatosIdentificacionPost)
 																				} else {
 																					errorGetAll = true
-																					alertas = append(alertas, "No data found")
-																					alerta.Code = "404"
-																					alerta.Type = "error"
-																					alerta.Body = alertas
-																					c.Data["json"] = map[string]interface{}{"Response": alerta}
+																					message = "No data found for datos_identificacion"
 																				}
 																			} else {
 																				errorGetAll = true
-																				alertas = append(alertas, errDatosIDNuevo.Error())
-																				alerta.Code = "400"
-																				alerta.Type = "error"
-																				alerta.Body = alertas
-																				c.Data["json"] = map[string]interface{}{"Response": alerta}
+																				message = errDatosIDNuevo.Error()
 																			}
 																		} else {
 																			errorGetAll = true
-																			alertas = append(alertas, "No data found")
-																			alerta.Code = "404"
-																			alerta.Type = "error"
-																			alerta.Body = alertas
-																			c.Data["json"] = map[string]interface{}{"Response": alerta}
+																			message = "No data found"
 																		}
 																	} else {
 																		errorGetAll = true
-																		alertas = append(alertas, errDatosID.Error())
-																		alerta.Code = "400"
-																		alerta.Type = "error"
-																		alerta.Body = alertas
-																		c.Data["json"] = map[string]interface{}{"Response": alerta}
+																		message = errDatosID.Error()
 																	}
 																} else {
 																	errorGetAll = true
-																	alertas = append(alertas, "No data found")
-																	alerta.Code = "404"
-																	alerta.Type = "error"
-																	alerta.Body = alertas
-																	c.Data["json"] = map[string]interface{}{"Response": alerta}
+																	message = "No data found"
 																}
 															} else {
 																errorGetAll = true
-																alertas = append(alertas, errTercero.Error())
-																alerta.Code = "400"
-																alerta.Type = "error"
-																alerta.Body = alertas
-																c.Data["json"] = map[string]interface{}{"Response": alerta}
+																message = errTercero.Error()
 															}
 														} else if EstadoTipoSolicitudId == 18 {
 															//PUT a terceros, a la tabla tercero por cambio de nombre(s)
@@ -388,136 +338,75 @@ func (c *SolicitudEvaluacionController) PostSolicitudEvolucionEstado() {
 																			formatdata.JsonPrint(TerceroPut)
 																		} else {
 																			errorGetAll = true
-																			alertas = append(alertas, "No data found")
-																			alerta.Code = "404"
-																			alerta.Type = "error"
-																			alerta.Body = alertas
-																			c.Data["json"] = map[string]interface{}{"Response": alerta}
+																			message = "No data found"
 																		}
 																	} else {
 																		errorGetAll = true
-																		alertas = append(alertas, errTerceroPut.Error())
-																		alerta.Code = "400"
-																		alerta.Type = "error"
-																		alerta.Body = alertas
-																		c.Data["json"] = map[string]interface{}{"Response": alerta}
+																		message = errTerceroPut.Error()
 																	}
 																} else {
 																	errorGetAll = true
-																	alertas = append(alertas, "No data found")
-																	alerta.Code = "404"
-																	alerta.Type = "error"
-																	alerta.Body = alertas
-																	c.Data["json"] = map[string]interface{}{"Response": alerta}
+																	message = "No data found"
 																}
 															} else {
 																errorGetAll = true
-																alertas = append(alertas, errTercero.Error())
-																alerta.Code = "400"
-																alerta.Type = "error"
-																alerta.Body = alertas
-																c.Data["json"] = map[string]interface{}{"Response": alerta}
+																message = errTercero.Error()
 															}
 														}
 													}
 												} else {
 													errorGetAll = true
-													alertas = append(alertas, "No data found")
-													alerta.Code = "404"
-													alerta.Type = "error"
-													alerta.Body = alertas
-													c.Data["json"] = map[string]interface{}{"Response": alerta}
+													message = "No data found"
 												}
 											} else {
 												errorGetAll = true
-												alertas = append(alertas, errSolicitud.Error())
-												alerta.Code = "400"
-												alerta.Type = "error"
-												alerta.Body = alertas
-												c.Data["json"] = map[string]interface{}{"Response": alerta}
+												message = errSolicitud.Error()
 											}
 										}
-
 										resultado = SolicitudEvolucionEstadoPost
 									} else {
 										errorGetAll = true
-										alertas = append(alertas, "No data found")
-										alerta.Code = "404"
-										alerta.Type = "error"
-										alerta.Body = alertas
-										c.Data["json"] = map[string]interface{}{"Response": alerta}
+										message = "No data found"
 									}
 								} else {
 									errorGetAll = true
-									alertas = append(alertas, errSolicitudAux.Error())
-									alerta.Code = "400"
-									alerta.Type = "error"
-									alerta.Body = alertas
-									c.Data["json"] = map[string]interface{}{"Response": alerta}
+									message = errSolicitudAux.Error()
 								}
 							} else {
 								errorGetAll = true
-								alertas = append(alertas, "No data found")
-								alerta.Code = "404"
-								alerta.Type = "error"
-								alerta.Body = alertas
-								c.Data["json"] = map[string]interface{}{"Response": alerta}
+								message = "No data found"
 							}
 						} else {
 							errorGetAll = true
-							alertas = append(alertas, errSolicitud.Error())
-							alerta.Code = "400"
-							alerta.Type = "error"
-							alerta.Body = alertas
-							c.Data["json"] = map[string]interface{}{"Response": alerta}
+							message = "No data found"
 						}
 					} else {
 						errorGetAll = true
-						alertas = append(alertas, "No data found")
-						alerta.Code = "404"
-						alerta.Type = "error"
-						alerta.Body = alertas
-						c.Data["json"] = map[string]interface{}{"Response": alerta}
+						message = "No data found"
 					}
 				} else {
 					errorGetAll = true
-					alertas = append(alertas, errSolicitudEvolucionEstado.Error())
-					alerta.Code = "400"
-					alerta.Type = "error"
-					alerta.Body = alertas
-					c.Data["json"] = map[string]interface{}{"Response": alerta}
+					message = errSolicitudEvolucionEstado.Error()
 				}
 			} else {
 				errorGetAll = true
-				alertas = append(alertas, "No data found")
-				alerta.Code = "404"
-				alerta.Type = "error"
-				alerta.Body = alertas
-				c.Data["json"] = map[string]interface{}{"Response": alerta}
+				message = "No data found"
 			}
 		} else {
 			errorGetAll = true
-			alertas = append(alertas, errSolicitud.Error())
-			alerta.Code = "400"
-			alerta.Type = "error"
-			alerta.Body = alertas
-			c.Data["json"] = map[string]interface{}{"Response": alerta}
+			message = errSolicitud.Error()
 		}
 	} else {
 		errorGetAll = true
-		alertas = append(alertas, err.Error())
-		alerta.Code = "400"
-		alerta.Type = "error"
-		alerta.Body = alertas
-		c.Data["json"] = map[string]interface{}{"Response": alerta}
+		message = err.Error()
 	}
 
 	if !errorGetAll {
-		alertas = append(alertas, resultado)
-		alerta.Code = "200"
-		alerta.Type = "OK"
-		alerta.Body = alertas
-		c.Data["json"] = map[string]interface{}{"Response": alerta}
+		c.Ctx.Output.SetStatus(200)
+		c.Data["json"] = requestresponse.APIResponseDTO(true, 200, resultado)
+	} else {
+		c.Ctx.Output.SetStatus(400)
+		c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, message)
 	}
 
 	c.ServeJSON()
@@ -525,27 +414,26 @@ func (c *SolicitudEvaluacionController) PostSolicitudEvolucionEstado() {
 
 // GetAllSolicitudActualizacionDatos ...
 // @Title GetAllSolicitudActualizacionDatos
-// @Description Consultar todas la solicitudes de actualización de datos
-// @Param	id_estado_tipo_sol	path	int	true	"Id del estado tipo solicitud"
+// @Description Consultar todas la solicitudes de actualización de datos filtradas por el id del tipo de solicitud
+// @Param	id_estado_tipo_solicitud	path	int	true	"Id del estado tipo solicitud"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /estados/:tipo_estado_id [get]
+// @router /solicitudes/estados/:id_estado_tipo_solicitud [get]
 func (c *SolicitudEvaluacionController) GetAllSolicitudActualizacionDatos() {
+	defer errorhandler.HandlePanic(&c.Controller)
+
 	//Consulta a tabla de solicitante la cual trae toda la info de la solicitud
-	id_estado_tipo_sol := c.Ctx.Input.Param(":tipo_estado_id")
+	idEstadoTipoSolicitud := c.Ctx.Input.Param(":id_estado_tipo_solicitud")
+
 	var Solicitudes []map[string]interface{}
 	var TipoSolicitud map[string]interface{}
 	var Estado map[string]interface{}
 	var Observacion []map[string]interface{}
 	var respuesta []map[string]interface{}
-	//var respuestaAux []map[string]in
-	var resultado map[string]interface{}
-	resultado = make(map[string]interface{})
-	var alerta models.Alert
 	var errorGetAll bool
-	alertas := append([]interface{}{})
+	var message string
 
-	errSolicitud := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitante?query=SolicitudId.EstadoTipoSolicitudId.Id:"+fmt.Sprintf("%v", id_estado_tipo_sol)+"&sortby:Id&order:asc&limit=0", &Solicitudes)
+	errSolicitud := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitante?query=SolicitudId.EstadoTipoSolicitudId.Id:"+fmt.Sprintf("%v", idEstadoTipoSolicitud)+"&sortby:Id&order:asc&limit=0", &Solicitudes)
 	if errSolicitud == nil {
 		if Solicitudes != nil && fmt.Sprintf("%v", Solicitudes[0]) != "map[]" {
 			respuesta = make([]map[string]interface{}, len(Solicitudes))
@@ -585,70 +473,40 @@ func (c *SolicitudEvaluacionController) GetAllSolicitudActualizacionDatos() {
 									}
 								} else {
 									errorGetAll = true
-									alertas = append(alertas, errEstado.Error())
-									alerta.Code = "400"
-									alerta.Type = "error"
-									alerta.Body = alertas
-									c.Data["json"] = map[string]interface{}{"Response": alerta}
+									message = errEstado.Error()
 								}
 							} else {
 								errorGetAll = true
-								alertas = append(alertas, "No data found")
-								alerta.Code = "404"
-								alerta.Type = "error"
-								alerta.Body = alertas
-								c.Data["json"] = map[string]interface{}{"Response": alerta}
+								message = "No data found"
 							}
 						} else {
 							errorGetAll = true
-							alertas = append(alertas, errEstado.Error())
-							alerta.Code = "400"
-							alerta.Type = "error"
-							alerta.Body = alertas
-							c.Data["json"] = map[string]interface{}{"Response": alerta}
+							message = errEstado.Error()
 						}
 					} else {
 						errorGetAll = true
-						alertas = append(alertas, "No data found")
-						alerta.Code = "404"
-						alerta.Type = "error"
-						alerta.Body = alertas
-						c.Data["json"] = map[string]interface{}{"Response": alerta}
+						message = "No data found"
 					}
 				} else {
 					errorGetAll = true
-					alertas = append(alertas, errTipoSolicitud.Error())
-					alerta.Code = "400"
-					alerta.Type = "error"
-					alerta.Body = alertas
-					c.Data["json"] = map[string]interface{}{"Response": alerta}
+					message = errTipoSolicitud.Error()
 				}
 			}
-
-			resultado["Data"] = respuesta
 		} else {
 			errorGetAll = true
-			alertas = append(alertas, "No data found")
-			alerta.Code = "404"
-			alerta.Type = "error"
-			alerta.Body = alertas
-			c.Data["json"] = map[string]interface{}{"Response": alerta}
+			message = "No data found"
 		}
 	} else {
 		errorGetAll = true
-		alertas = append(alertas, errSolicitud.Error())
-		alerta.Code = "400"
-		alerta.Type = "error"
-		alerta.Body = alertas
-		c.Data["json"] = map[string]interface{}{"Response": alerta}
+		message = errSolicitud.Error()
 	}
 
 	if !errorGetAll {
-		alertas = append(alertas, resultado)
-		alerta.Code = "200"
-		alerta.Type = "OK"
-		alerta.Body = alertas
-		c.Data["json"] = map[string]interface{}{"Response": alerta}
+		c.Ctx.Output.SetStatus(200)
+		c.Data["json"] = requestresponse.APIResponseDTO(true, 200, respuesta)
+	} else {
+		c.Ctx.Output.SetStatus(400)
+		c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, message)
 	}
 
 	c.ServeJSON()
@@ -661,17 +519,18 @@ func (c *SolicitudEvaluacionController) GetAllSolicitudActualizacionDatos() {
 // @Param	id_estado_tipo_solicitud	path	int	true	"Id del estado del tipo de solictud"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /estados/:tipo_estado_id/terceros/:tercero_id [get]
+// @router /personas/:id_persona/solicitudes/estados/:id_estado_tipo_solicitud [get]
 func (c *SolicitudEvaluacionController) GetDatosSolicitud() {
-	id_persona := c.Ctx.Input.Param(":tercero_id")
-	id_estado_tipo_solicitud := c.Ctx.Input.Param(":tipo_estado_id")
+	defer errorhandler.HandlePanic(&c.Controller)
+
+	id_persona := c.Ctx.Input.Param(":id_persona")
+	id_estado_tipo_solicitud := c.Ctx.Input.Param(":id_estado_tipo_solicitud")
 	var Solicitudes []map[string]interface{}
 	var TipoDocumentoGet map[string]interface{}
 	var resultado map[string]interface{}
 	resultado = make(map[string]interface{})
-	var alerta models.Alert
 	var errorGetAll bool
-	alertas := append([]interface{}{})
+	var message string
 
 	errSolicitud := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitante?query=TerceroId:"+id_persona+",SolicitudId.EstadoTipoSolicitudId.Id:"+id_estado_tipo_solicitud+"&limit=0", &Solicitudes)
 	if errSolicitud == nil {
@@ -693,19 +552,11 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitud() {
 							}
 						} else {
 							errorGetAll = true
-							alertas = append(alertas, "No data found")
-							alerta.Code = "404"
-							alerta.Type = "error"
-							alerta.Body = alertas
-							c.Data["json"] = map[string]interface{}{"Response": alerta}
+							message = "No data found, tipo de documento -> nil"
 						}
 					} else {
 						errorGetAll = true
-						alertas = append(alertas, errSolicitud.Error())
-						alerta.Code = "400"
-						alerta.Type = "error"
-						alerta.Body = alertas
-						c.Data["json"] = map[string]interface{}{"Response": alerta}
+						message = errSolicitud.Error()
 					}
 				} else if id_estado_tipo_solicitud == "16" {
 					resultado["ApellidoNuevo"] = ReferenciaJson["DatosNuevos"].(map[string]interface{})["ApellidoNuevo"]
@@ -715,27 +566,21 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitud() {
 			}
 		} else {
 			errorGetAll = true
-			alertas = append(alertas, "No data found")
-			alerta.Code = "404"
-			alerta.Type = "error"
-			alerta.Body = alertas
-			c.Data["json"] = map[string]interface{}{"Response": alerta}
+			message = "No data found, solicitudes -> nil"
 		}
 	} else {
 		errorGetAll = true
-		alertas = append(alertas, errSolicitud.Error())
-		alerta.Code = "400"
-		alerta.Type = "error"
-		alerta.Body = alertas
-		c.Data["json"] = map[string]interface{}{"Response": alerta}
+		message = errSolicitud.Error()
 	}
 
-	if !errorGetAll {
-		alertas = append(alertas, resultado)
-		alerta.Code = "200"
-		alerta.Type = "OK"
-		alerta.Body = alertas
-		c.Data["json"] = map[string]interface{}{"Response": alerta}
+	if errorGetAll {
+		c.Ctx.Output.SetStatus(400)
+		response := requestresponse.APIResponseDTO(false, 400, nil, message)
+		c.Data["json"] = response
+	} else {
+		c.Ctx.Output.SetStatus(200)
+		response := requestresponse.APIResponseDTO(true, 200, resultado)
+		c.Data["json"] = response
 	}
 
 	c.ServeJSON()
@@ -747,123 +592,55 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitud() {
 // @Param	id_persona	path	int	true	"Id del estudiante"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /terceros/:persona_id [get]
+// @router /personas/:id_persona/solicitudes [get]
 func (c *SolicitudEvaluacionController) GetSolicitudActualizacionDatos() {
-	id_persona := c.Ctx.Input.Param(":persona_id")
+	defer errorhandler.HandlePanic(&c.Controller)
+
+	id_persona := c.Ctx.Input.Param(":id_persona")
 	var Solicitudes []map[string]interface{}
-	var TipoSolicitud map[string]interface{}
-	var Estado map[string]interface{}
 	var respuesta []map[string]interface{}
-	var resultado map[string]interface{}
-	resultado = make(map[string]interface{})
-	var alerta models.Alert
-	var errorGetAll bool
-	alertas := append([]interface{}{})
 
 	errSolicitud := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitante?query=TerceroId:"+id_persona+"&sortby=Id&order=asc&limit=0", &Solicitudes)
-	if errSolicitud == nil {
-		if Solicitudes != nil && fmt.Sprintf("%v", Solicitudes[0]) != "map[]" {
-			respuesta = make([]map[string]interface{}, len(Solicitudes))
-			for i := 0; i < len(Solicitudes); i++ {
-				IdTipoSolicitud := fmt.Sprintf("%v", Solicitudes[i]["SolicitudId"].(map[string]interface{})["EstadoTipoSolicitudId"].(map[string]interface{})["TipoSolicitud"].(map[string]interface{})["Id"])
-				//Nombre tipo solicitud
-				errTipoSolicitud := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"tipo_solicitud/"+IdTipoSolicitud, &TipoSolicitud)
-				if errTipoSolicitud == nil {
-					if TipoSolicitud != nil && fmt.Sprintf("%v", TipoSolicitud) != "map[]" {
-						IdEstado := fmt.Sprintf("%v", Solicitudes[i]["SolicitudId"].(map[string]interface{})["EstadoTipoSolicitudId"].(map[string]interface{})["EstadoId"].(map[string]interface{})["Id"])
-						//Nombre estado de la solicitud
-						errEstado := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"estado/"+IdEstado, &Estado)
-						if errEstado == nil {
-							if Estado != nil && fmt.Sprintf("%v", Estado) != "map[]" {
-								// Observacion (Si la hay) sobre la solicitud
-								IdSolicitud := fmt.Sprintf("%v", Solicitudes[i]["SolicitudId"].(map[string]interface{})["Id"])
-								var Observacion []map[string]interface{}
-								errObservacion := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"observacion?query=SolicitudId:"+IdSolicitud+",TerceroId:"+id_persona, &Observacion)
-								if errObservacion == nil {
-									if Observacion != nil && fmt.Sprintf("%v", Observacion[0]) != "map[]" {
-										respuesta[i] = map[string]interface{}{
-											"Numero":      Solicitudes[i]["SolicitudId"].(map[string]interface{})["Id"],
-											"Fecha":       Solicitudes[i]["SolicitudId"].(map[string]interface{})["FechaRadicacion"],
-											"Tipo":        TipoSolicitud["Data"].(map[string]interface{})["Nombre"],
-											"Estado":      Estado["Data"].(map[string]interface{})["Nombre"],
-											"Observacion": Observacion[0]["Valor"],
-											"TerceroId":   id_persona,
-										}
-									} else {
-										respuesta[i] = map[string]interface{}{
-											"Numero":      Solicitudes[i]["SolicitudId"].(map[string]interface{})["Id"],
-											"Fecha":       Solicitudes[i]["SolicitudId"].(map[string]interface{})["FechaRadicacion"],
-											"Tipo":        TipoSolicitud["Data"].(map[string]interface{})["Nombre"],
-											"Estado":      Estado["Data"].(map[string]interface{})["Nombre"],
-											"Observacion": "",
-											"TerceroId":   id_persona,
-										}
-									}
-								} else {
-									errorGetAll = true
-									alertas = append(alertas, errEstado.Error())
-									alerta.Code = "400"
-									alerta.Type = "error"
-									alerta.Body = alertas
-									c.Data["json"] = map[string]interface{}{"Response": alerta}
-								}
-							} else {
-								errorGetAll = true
-								alertas = append(alertas, "No data found")
-								alerta.Code = "404"
-								alerta.Type = "error"
-								alerta.Body = alertas
-								c.Data["json"] = map[string]interface{}{"Response": alerta}
-							}
-						} else {
-							errorGetAll = true
-							alertas = append(alertas, errEstado.Error())
-							alerta.Code = "400"
-							alerta.Type = "error"
-							alerta.Body = alertas
-							c.Data["json"] = map[string]interface{}{"Response": alerta}
-						}
-					} else {
-						errorGetAll = true
-						alertas = append(alertas, "No data found")
-						alerta.Code = "404"
-						alerta.Type = "error"
-						alerta.Body = alertas
-						c.Data["json"] = map[string]interface{}{"Response": alerta}
-					}
-				} else {
-					errorGetAll = true
-					alertas = append(alertas, errTipoSolicitud.Error())
-					alerta.Code = "400"
-					alerta.Type = "error"
-					alerta.Body = alertas
-					c.Data["json"] = map[string]interface{}{"Response": alerta}
-				}
-			}
-			resultado["Response"] = respuesta
-		} else {
-			errorGetAll = true
-			alertas = append(alertas, "No data found")
-			alerta.Code = "404"
-			alerta.Type = "error"
-			alerta.Body = alertas
-			c.Data["json"] = map[string]interface{}{"Response": alerta}
-		}
+	if errSolicitud != nil {
+		// En caso de error en la solicitud
+		c.Ctx.Output.SetStatus(http.StatusBadRequest)
+		c.Data["json"] = requestresponse.APIResponseDTO(false, http.StatusBadRequest, nil, errSolicitud.Error())
+	} else if Solicitudes == nil || fmt.Sprintf("%v", Solicitudes[0]) == "map[]" {
+		// Si no se encuentran datos
+		c.Ctx.Output.SetStatus(http.StatusNotFound)
+		c.Data["json"] = requestresponse.APIResponseDTO(false, http.StatusNotFound, nil, "No data found")
 	} else {
-		errorGetAll = true
-		alertas = append(alertas, errSolicitud.Error())
-		alerta.Code = "400"
-		alerta.Type = "error"
-		alerta.Body = alertas
-		c.Data["json"] = map[string]interface{}{"Response": alerta}
-	}
+		// Procesamiento de la respuesta exitosa
+		respuesta = make([]map[string]interface{}, len(Solicitudes))
+		for i, solicitud := range Solicitudes {
+			IdTipoSolicitud := fmt.Sprintf("%v", solicitud["SolicitudId"].(map[string]interface{})["EstadoTipoSolicitudId"].(map[string]interface{})["TipoSolicitud"].(map[string]interface{})["Id"])
+			var TipoSolicitud, Estado map[string]interface{}
 
-	if !errorGetAll {
-		alertas = append(alertas, resultado)
-		alerta.Code = "200"
-		alerta.Type = "OK"
-		alerta.Body = alertas
-		c.Data["json"] = map[string]interface{}{"Response": alerta}
+			// Obteniendo información adicional de la solicitud
+			request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"tipo_solicitud/"+IdTipoSolicitud, &TipoSolicitud)
+			IdEstado := fmt.Sprintf("%v", solicitud["SolicitudId"].(map[string]interface{})["EstadoTipoSolicitudId"].(map[string]interface{})["EstadoId"].(map[string]interface{})["Id"])
+			request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"estado/"+IdEstado, &Estado)
+
+			var Observacion []map[string]interface{}
+			IdSolicitud := fmt.Sprintf("%v", solicitud["SolicitudId"].(map[string]interface{})["Id"])
+			request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"observacion?query=SolicitudId:"+IdSolicitud+",TerceroId:"+id_persona, &Observacion)
+
+			observacion := ""
+			if Observacion != nil && fmt.Sprintf("%v", Observacion[0]) != "map[]" {
+				observacion = Observacion[0]["Valor"].(string)
+			}
+
+			respuesta[i] = map[string]interface{}{
+				"Numero":      solicitud["SolicitudId"].(map[string]interface{})["Id"],
+				"Fecha":       solicitud["SolicitudId"].(map[string]interface{})["FechaRadicacion"],
+				"Tipo":        TipoSolicitud["Data"].(map[string]interface{})["Nombre"],
+				"Estado":      Estado["Data"].(map[string]interface{})["Nombre"],
+				"Observacion": observacion,
+				"TerceroId":   id_persona,
+			}
+		}
+		c.Ctx.Output.SetStatus(http.StatusOK)
+		c.Data["json"] = requestresponse.APIResponseDTO(true, http.StatusOK, respuesta)
 	}
 
 	c.ServeJSON()
@@ -875,8 +652,10 @@ func (c *SolicitudEvaluacionController) GetSolicitudActualizacionDatos() {
 // @Param   body        body    {}  true        "body Agregar solicitud actualizacion datos content"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router / [post]
+// @router /solicitudes [post]
 func (c *SolicitudEvaluacionController) PostSolicitudActualizacionDatos() {
+	defer errorhandler.HandlePanic(&c.Controller)
+
 	var Solicitud map[string]interface{}
 	var SolicitudPadre map[string]interface{}
 	var SolicitudPost map[string]interface{}
@@ -1039,21 +818,17 @@ func (c *SolicitudEvaluacionController) PostSolicitudActualizacionDatos() {
 			alerta.Body = alertas
 			c.Data["json"] = map[string]interface{}{"Response": alerta}
 		}
-	} else {
-		errorGetAll = true
-		alertas = append(alertas, err.Error())
-		alerta.Code = "400"
-		alerta.Type = "error"
-		alerta.Body = alertas
-		c.Data["json"] = map[string]interface{}{"Response": alerta}
-	}
 
-	if !errorGetAll {
-		alertas = append(alertas, resultado)
-		alerta.Code = "200"
-		alerta.Type = "OK"
-		alerta.Body = alertas
-		c.Data["json"] = map[string]interface{}{"Response": alerta}
+		if !errorGetAll {
+			c.Ctx.Output.SetStatus(200)
+			c.Data["json"] = requestresponse.APIResponseDTO(true, 200, resultado)
+		} else {
+			c.Ctx.Output.SetStatus(400)
+			c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, errSolicitud.Error())
+		}
+	} else {
+		c.Ctx.Output.SetStatus(403)
+		c.Data["json"] = requestresponse.APIResponseDTO(false, 403, nil, "Error al procesar la solicitud: "+err.Error())
 	}
 
 	c.ServeJSON()
@@ -1062,49 +837,56 @@ func (c *SolicitudEvaluacionController) PostSolicitudActualizacionDatos() {
 // PutSolicitudEvaluacion ...
 // @Title PutSolicitudEvaluacion
 // @Description actualiza de forma publica el estado de una solicitud tipo evaluacion
+// @Parama id_solicitud path int true "ID DE LA SOLICITUD"
 // @Success 200 {}
 // @Failure 404 not found resource
-// @router /:id [get]
+// @router /solicitudes/:id_solicitud/estado [get]
 func (c *SolicitudEvaluacionController) PutSolicitudEvaluacion() {
-	//Id de la solicitud
-	idSolicitud := c.Ctx.Input.Param(":id")
-	//resultado resultado final
-	var resultadoPutSolicitud map[string]interface{}
-	resultadoRechazo := make(map[string]interface{})
+	defer errorhandler.HandlePanic(&c.Controller)
 
-	var solicitudEvaluacion map[string]interface{}
-	if solicitudEvaluacionList, errGet := models.GetOneSolicitudDocente(idSolicitud); errGet == nil {
-		solicitudEvaluacion = solicitudEvaluacionList[0].(map[string]interface{})
-		if fmt.Sprintf("%v", solicitudEvaluacion["EstadoTipoSolicitudId"].(map[string]interface{})["EstadoId"].(map[string]interface{})["Id"]) == "11" {
-			mensaje := "La invitación ya ha sido rechazada anteriormente, por favor cierre la pestaña o ventana"
-			resultadoRechazo["Resultado"] = map[string]interface{}{
-				"Mensaje": mensaje,
-			}
-			c.Data["json"] = resultadoRechazo
-		} else {
-			if solicitudReject, errPrepared := models.PreparedRejectState(solicitudEvaluacion); errPrepared == nil {
-				if resultado, errPut := models.PutSolicitudDocente(solicitudReject, idSolicitud); errPut == nil {
-					resultadoPutSolicitud = resultado
-					mensaje := "La invitación ha sido rechazada, por favor cierre la pestaña o ventana"
-					resultadoRechazo["Resultado"] = map[string]interface{}{
-						"Mensaje": mensaje,
-					}
-					c.Data["json"] = resultadoRechazo
-				} else {
-					logs.Error(errPut)
-					c.Data["system"] = resultadoPutSolicitud
-					c.Abort("400")
-				}
-			} else {
-				logs.Error(errPrepared)
-				c.Data["system"] = resultadoPutSolicitud
-				c.Abort("400")
-			}
-		}
-	} else {
+	//Id de la solicitud
+	idSolicitud := c.Ctx.Input.Param(":id_solicitud")
+
+	solicitudEvaluacionList, errGet := models.GetOneSolicitudDocente(idSolicitud)
+	if errGet != nil {
 		logs.Error(errGet)
-		c.Data["system"] = resultadoPutSolicitud
-		c.Abort("400")
+		c.Ctx.Output.SetStatus(400)
+		c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, "Error al obtener la solicitud")
+		c.ServeJSON()
+		return
 	}
+
+	if len(solicitudEvaluacionList) == 0 {
+		c.Ctx.Output.SetStatus(404)
+		c.Data["json"] = requestresponse.APIResponseDTO(false, 404, nil, "No se encontró la solicitud")
+		c.ServeJSON()
+		return
+	}
+
+	solicitudEvaluacion := solicitudEvaluacionList[0].(map[string]interface{})
+	estadoID := fmt.Sprintf("%v", solicitudEvaluacion["EstadoTipoSolicitudId"].(map[string]interface{})["EstadoId"].(map[string]interface{})["Id"])
+
+	if estadoID == "11" {
+		mensaje := "La invitación ya ha sido rechazada anteriormente, por favor cierre la pestaña o ventana"
+		c.Ctx.Output.SetStatus(400)
+		c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, mensaje)
+	} else {
+		if solicitudReject, errPrepared := models.PreparedRejectState(solicitudEvaluacion); errPrepared == nil {
+			if _, errPut := models.PutSolicitudDocente(solicitudReject, idSolicitud); errPut == nil {
+				mensaje := "La invitación ha sido rechazada, por favor cierre la pestaña o ventana"
+				c.Ctx.Output.SetStatus(200)
+				c.Data["json"] = requestresponse.APIResponseDTO(true, 200, nil, mensaje)
+			} else {
+				logs.Error(errPut)
+				c.Ctx.Output.SetStatus(400)
+				c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, "Error al actualizar la solicitud")
+			}
+		} else {
+			logs.Error(errPrepared)
+			c.Ctx.Output.SetStatus(400)
+			c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, "Error al preparar el estado de rechazo")
+		}
+	}
+
 	c.ServeJSON()
 }
