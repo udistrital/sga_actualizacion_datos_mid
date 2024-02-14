@@ -9,6 +9,7 @@ import (
 	"github.com/astaxie/beego/logs"
 	"github.com/udistrital/sga_mid_actualizacion_datos/models"
 	"github.com/udistrital/sga_mid_actualizacion_datos/services"
+	"github.com/udistrital/utils_oas/errorhandler"
 	"github.com/udistrital/utils_oas/formatdata"
 	"github.com/udistrital/utils_oas/request"
 )
@@ -37,6 +38,8 @@ func (c *SolicitudEvaluacionController) URLMapping() {
 // @Failure 403 body is empty
 // @router /:solicitud_id [get]
 func (c *SolicitudEvaluacionController) GetDatosSolicitudById() {
+	defer errorhandler.HandlePanic(&c.Controller)
+
 	id_solicitud := c.Ctx.Input.Param(":solicitud_id")
 	var Solicitud map[string]interface{}
 	var TipoDocumentoGet map[string]interface{}
@@ -61,23 +64,32 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitudById() {
 					TipoDocumento := fmt.Sprintf("%v", ReferenciaJson["DatosAnteriores"].(map[string]interface{})["TipoDocumentoActual"].(map[string]interface{})["Id"])
 					services.ConfigurarResultadoGetSolicitudId(&resultado, &ReferenciaJson, 1)
 
-					c.Data["json"] = services.SolicitudTipoDocGetSolicitudId(TipoDocumento, &TipoDocumentoGet, &resultado, &alerta, &alertas, &errorGetAll)
+					if respuestaTipo := services.SolicitudTipoDocGetSolicitudId(TipoDocumento, &TipoDocumentoGet, &resultado, &alerta, &alertas, &errorGetAll); respuestaTipo != nil {
+						c.Ctx.Output.SetStatus(404)
+						c.Data["json"] = respuestaTipo
+					}
 
-					c.Data["json"] = services.SolicitudDocActualGetSolicitudId(ReferenciaJson, &TipoDocumentoActualGet, &resultado, &alerta, &alertas, &errorGetAll)
+					if respuestaDoc := services.SolicitudDocActualGetSolicitudId(ReferenciaJson, &TipoDocumentoActualGet, &resultado, &alerta, &alertas, &errorGetAll); respuestaDoc != nil {
+						c.Ctx.Output.SetStatus(404)
+						c.Data["json"] = respuestaDoc
+					}
 				} else if TipoSolicitudId == 16 || TipoSolicitudId == 18 || TipoSolicitudId == 19 || TipoSolicitudId == 32 {
 					services.ConfigurarResultadoGetSolicitudId(&resultado, &ReferenciaJson, 2)
 				}
 			}
 		} else {
 			services.ManejoError(&alerta, &alertas, "No data found", &errorGetAll)
+			c.Ctx.Output.SetStatus(404)
 			c.Data["json"] = map[string]interface{}{"Response": alerta}
 		}
 	} else {
 		services.ManejoError(&alerta, &alertas, "", &errorGetAll, errSolicitud)
+		c.Ctx.Output.SetStatus(404)
 		c.Data["json"] = map[string]interface{}{"Response": alerta}
 	}
 
 	if !errorGetAll {
+		c.Ctx.Output.SetStatus(200)
 		services.ManejoExito(&alerta, &alertas, resultado)
 		c.Data["json"] = map[string]interface{}{"Response": alerta}
 	}
@@ -93,6 +105,8 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitudById() {
 // @Failure 403 body is empty
 // @router /evoluciones [post]
 func (c *SolicitudEvaluacionController) PostSolicitudEvolucionEstado() {
+	defer errorhandler.HandlePanic(&c.Controller)
+
 	var Solicitud map[string]interface{}
 	var SolicitudAux map[string]interface{}
 	var SolicitudAuxPost map[string]interface{}
@@ -113,13 +127,18 @@ func (c *SolicitudEvaluacionController) PostSolicitudEvolucionEstado() {
 	alertas := append([]interface{}{})
 
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &Solicitud); err == nil {
-		c.Data["json"] = services.SolicitudEstadoPostSolicitud(&resultado, &SolicitudEvolucionEstadoPost, &SolicitudAux, EstadoTipoSolicitudId, &SolicitudAuxPost, Solicitud, &ObservacionPost, &errorGetAll, &alerta, &alertas, &SolicitudAprob, &Tercero, &TerceroPut, &DatosIdentificacion, &DatosIdentificacionPut, &DatosIdentificacionPost, &SolicitudEvolucionEstado)
+		if respuesta := services.SolicitudEstadoPostSolicitud(&resultado, &SolicitudEvolucionEstadoPost, &SolicitudAux, EstadoTipoSolicitudId, &SolicitudAuxPost, Solicitud, &ObservacionPost, &errorGetAll, &alerta, &alertas, &SolicitudAprob, &Tercero, &TerceroPut, &DatosIdentificacion, &DatosIdentificacionPut, &DatosIdentificacionPost, &SolicitudEvolucionEstado); respuesta != nil {
+			c.Ctx.Output.SetStatus(404)
+			c.Data["json"] = respuesta
+		}
 	} else {
 		services.ManejoError(&alerta, &alertas, "", &errorGetAll, err)
+		c.Ctx.Output.SetStatus(404)
 		c.Data["json"] = map[string]interface{}{"Response": alerta}
 	}
 
 	if !errorGetAll {
+		c.Ctx.Output.SetStatus(200)
 		services.ManejoExito(&alerta, &alertas, resultado)
 		c.Data["json"] = map[string]interface{}{"Response": alerta}
 	}
@@ -136,6 +155,8 @@ func (c *SolicitudEvaluacionController) PostSolicitudEvolucionEstado() {
 // @router /estados/:tipo_estado_id [get]
 func (c *SolicitudEvaluacionController) GetAllSolicitudActualizacionDatos() {
 	//Consulta a tabla de solicitante la cual trae toda la info de la solicitud
+	defer errorhandler.HandlePanic(&c.Controller)
+
 	id_estado_tipo_sol := c.Ctx.Input.Param(":tipo_estado_id")
 	var Solicitudes []map[string]interface{}
 	var TipoSolicitud map[string]interface{}
@@ -149,9 +170,13 @@ func (c *SolicitudEvaluacionController) GetAllSolicitudActualizacionDatos() {
 	var errorGetAll bool
 	alertas := append([]interface{}{})
 
-	c.Data["json"] = services.ManejoSolicitudesGetAll(&Solicitudes, Observacion, &respuesta, &TipoSolicitud, &Estado, &errorGetAll, &alertas, &alerta, id_estado_tipo_sol, &resultado)
+	if resp := services.ManejoSolicitudesGetAll(&Solicitudes, Observacion, &respuesta, &TipoSolicitud, &Estado, &errorGetAll, &alertas, &alerta, id_estado_tipo_sol, &resultado); resp != nil {
+		c.Ctx.Output.SetStatus(404)
+		c.Data["json"] = resp
+	}
 
 	if !errorGetAll {
+		c.Ctx.Output.SetStatus(200)
 		services.ManejoExito(&alerta, &alertas, resultado)
 		c.Data["json"] = map[string]interface{}{"Response": alerta}
 	}
@@ -168,6 +193,8 @@ func (c *SolicitudEvaluacionController) GetAllSolicitudActualizacionDatos() {
 // @Failure 403 body is empty
 // @router /estados/:tipo_estado_id/terceros/:tercero_id [get]
 func (c *SolicitudEvaluacionController) GetDatosSolicitud() {
+	defer errorhandler.HandlePanic(&c.Controller)
+
 	id_persona := c.Ctx.Input.Param(":tercero_id")
 	id_estado_tipo_solicitud := c.Ctx.Input.Param(":tipo_estado_id")
 	var Solicitudes []map[string]interface{}
@@ -178,9 +205,13 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitud() {
 	var errorGetAll bool
 	alertas := append([]interface{}{})
 
-	c.Data["json"] = services.SolicitudGetDatos(&resultado, &TipoDocumentoGet, &errorGetAll, &alertas, &alerta, id_persona, id_estado_tipo_solicitud, &Solicitudes)
+	if respuesta := services.SolicitudGetDatos(&resultado, &TipoDocumentoGet, &errorGetAll, &alertas, &alerta, id_persona, id_estado_tipo_solicitud, &Solicitudes); respuesta != nil {
+		c.Ctx.Output.SetStatus(404)
+		c.Data["json"] = respuesta
+	}
 
 	if !errorGetAll {
+		c.Ctx.Output.SetStatus(200)
 		services.ManejoExito(&alerta, &alertas, resultado)
 		c.Data["json"] = map[string]interface{}{"Response": alerta}
 	}
@@ -196,6 +227,8 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitud() {
 // @Failure 403 body is empty
 // @router /terceros/:persona_id [get]
 func (c *SolicitudEvaluacionController) GetSolicitudActualizacionDatos() {
+	defer errorhandler.HandlePanic(&c.Controller)
+
 	id_persona := c.Ctx.Input.Param(":persona_id")
 	var Solicitudes []map[string]interface{}
 	var TipoSolicitud map[string]interface{}
@@ -207,9 +240,13 @@ func (c *SolicitudEvaluacionController) GetSolicitudActualizacionDatos() {
 	var errorGetAll bool
 	alertas := append([]interface{}{})
 
-	c.Data["json"] = services.ManejoSolicitudesGetActualizacion(&Solicitudes, id_persona, &respuesta, &TipoSolicitud, &Estado, &errorGetAll, &alertas, &alerta, &resultado)
+	if respuesta := services.ManejoSolicitudesGetActualizacion(&Solicitudes, id_persona, &respuesta, &TipoSolicitud, &Estado, &errorGetAll, &alertas, &alerta, &resultado); respuesta != nil {
+		c.Ctx.Output.SetStatus(404)
+		c.Data["json"] = respuesta
+	}
 
 	if !errorGetAll {
+		c.Ctx.Output.SetStatus(200)
 		services.ManejoExito(&alerta, &alertas, resultado)
 		c.Data["json"] = map[string]interface{}{"Response": alerta}
 	}
@@ -225,6 +262,8 @@ func (c *SolicitudEvaluacionController) GetSolicitudActualizacionDatos() {
 // @Failure 403 body is empty
 // @router / [post]
 func (c *SolicitudEvaluacionController) PostSolicitudActualizacionDatos() {
+	defer errorhandler.HandlePanic(&c.Controller)
+
 	var Solicitud map[string]interface{}
 	var SolicitudPadre map[string]interface{}
 	var SolicitudPost map[string]interface{}
@@ -239,13 +278,18 @@ func (c *SolicitudEvaluacionController) PostSolicitudActualizacionDatos() {
 	alertas := append([]interface{}{})
 
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &Solicitud); err == nil {
-		c.Data["json"] = services.ManejoSolicitudesPostActualizacion(IdEstadoTipoSolicitud, &SolicitudEvolucionEstadoPost, &resultado, &SolicitantePost, &errorGetAll, &alertas, &alerta, &SolicitudPost, Solicitud, Referencia, &SolicitudPadre)
+		if respuesta := services.ManejoSolicitudesPostActualizacion(IdEstadoTipoSolicitud, &SolicitudEvolucionEstadoPost, &resultado, &SolicitantePost, &errorGetAll, &alertas, &alerta, &SolicitudPost, Solicitud, Referencia, &SolicitudPadre); respuesta != nil {
+			c.Ctx.Output.SetStatus(404)
+			c.Data["json"] = respuesta
+		}
 	} else {
+		c.Ctx.Output.SetStatus(404)
 		services.ManejoError(&alerta, &alertas, "", &errorGetAll, err)
 		c.Data["json"] = map[string]interface{}{"Response": alerta}
 	}
 
 	if !errorGetAll {
+		c.Ctx.Output.SetStatus(200)
 		services.ManejoExito(&alerta, &alertas, resultado)
 		c.Data["json"] = map[string]interface{}{"Response": alerta}
 	}
@@ -260,6 +304,8 @@ func (c *SolicitudEvaluacionController) PostSolicitudActualizacionDatos() {
 // @Failure 404 not found resource
 // @router /:id [get]
 func (c *SolicitudEvaluacionController) PutSolicitudEvaluacion() {
+	defer errorhandler.HandlePanic(&c.Controller)
+
 	//Id de la solicitud
 	idSolicitud := c.Ctx.Input.Param(":id")
 	//resultado resultado final
