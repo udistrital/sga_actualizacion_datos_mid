@@ -1,0 +1,153 @@
+swagger: "2.0"
+info:
+  title: beego Test API
+  description: beego has a very cool tools to autogenerate documents for your API
+  version: 1.0.0
+  termsOfService: http://beego.me/
+  contact:
+    email: astaxie@gmail.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+basePath: /v1
+paths:
+  /actualizaciones-datos/personas/{id_persona}/solicitudes:
+    get:
+      tags:
+      - actualizaciones-datos
+      description: Consultar la solicitudes de un estudiante de actualización de datos
+      operationId: SolicitudEvaluacionController.GetSolicitudActualizacionDatos
+      parameters:
+      - in: path
+        name: id_persona
+        description: Id del estudiante
+        required: true
+        type: integer
+        format: int64
+      responses:
+        "200":
+          description: '{}'
+        "403":
+          description: body is empty
+  /actualizaciones-datos/personas/{id_persona}/solicitudes/estados/{id_estado_tipo_solicitud}:
+    get:
+      tags:
+      - actualizaciones-datos
+      description: Consultar los datos ingresados por el estudiante en su solicitud
+      operationId: SolicitudEvaluacionController.GetDatosSolicitud
+      parameters:
+      - in: path
+        name: id_persona
+        description: Id del estudiante
+        required: true
+        type: integer
+        format: int64
+      - in: path
+        name: id_estado_tipo_solicitud
+        description: Id del estado del tipo de solictud
+        required: true
+        type: integer
+        format: int64
+      responses:
+        "200":
+          description: '{}'
+        "403":
+          description: body is empty
+  /actualizaciones-datos/solicitudes:
+    post:
+      tags:
+      - actualizaciones-datos
+      description: Agregar una solicitud de actualizacion de datos(ID o nombre)
+      operationId: SolicitudEvaluacionController.PostSolicitudActualizacionDatos
+      parameters:
+      - in: body
+        name: body
+        description: body Agregar solicitud actualizacion datos content
+        required: true
+        schema:
+          $ref: '#/definitions/{}'
+      responses:
+        "200":
+          description: '{}'
+        "403":
+          description: body is empty
+  /actualizaciones-datos/solicitudes/{id_solicitud}:
+    get:
+      tags:
+      - actualizaciones-datos
+      description: Consultar los datos ingresados por el estudiante en su solicitud consultando por id de la solicitud
+      operationId: SolicitudEvaluacionController.GetDatosSolicitudById
+      parameters:
+      - in: path
+        name: id_solicitud
+        description: Id de la solicitud
+        required: true
+        type: integer
+        format: int64
+      responses:
+        "200":
+          description: '{}'
+        "403":
+          description: body is empty
+  /actualizaciones-datos/solicitudes/{id_solicitud}/estado:
+    get:
+      tags:
+      - actualizaciones-datos
+      description: actualiza de forma publica el estado de una solicitud tipo evaluacion
+      operationId: SolicitudEvaluacionController.PutSolicitudEvaluacion
+      parameters:
+      - in: path
+        name: id_solicitud
+        description: ID DE LA SOLICITUD
+        required: true
+        type: integer
+        format: int64
+      responses:
+        "200":
+          description: '{}'
+        "404":
+          description: not found resource
+  /actualizaciones-datos/solicitudes/estados/{id_estado_tipo_solicitud}:
+    get:
+      tags:
+      - actualizaciones-datos
+      description: Consultar todas la solicitudes de actualización de datos filtradas por el id del tipo de solicitud
+      operationId: SolicitudEvaluacionController.GetAllSolicitudActualizacionDatos
+      parameters:
+      - in: path
+        name: id_estado_tipo_solicitud
+        description: Id del estado tipo solicitud
+        required: true
+        type: integer
+        format: int64
+      responses:
+        "200":
+          description: '{}'
+        "403":
+          description: body is empty
+  /actualizaciones-datos/solicitudes/evoluciones:
+    post:
+      tags:
+      - actualizaciones-datos
+      description: Agregar una evolucion del estado a la solicitud planteada
+      operationId: SolicitudEvaluacionController.PostSolicitudEvolucionEstado
+      parameters:
+      - in: body
+        name: body
+        description: body Agregar una evolucion del estado a la solicitud planteada content
+        required: true
+        schema:
+          $ref: '#/definitions/{}'
+      responses:
+        "200":
+          description: '{}'
+        "403":
+          description: body is empty
+definitions:
+  '{}':
+    title: '{}'
+    type: object
+tags:
+- name: actualizaciones-datos
+  description: |
+    SolicitudEvaluacionController ...

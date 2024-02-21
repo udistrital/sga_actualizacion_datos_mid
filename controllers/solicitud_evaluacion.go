@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
 
 	"github.com/astaxie/beego"
@@ -36,7 +37,7 @@ func (c *SolicitudEvaluacionController) URLMapping() {
 // @Param	id_solicitud	path	int	true	"Id de la solicitud"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /:solicitud_id [get]
+// @router /solicitudes/:id_solicitud [get]
 func (c *SolicitudEvaluacionController) GetDatosSolicitudById() {
 	defer errorhandler.HandlePanic(&c.Controller)
 
@@ -46,9 +47,8 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitudById() {
 	var TipoDocumentoActualGet map[string]interface{}
 	var resultado map[string]interface{}
 	resultado = make(map[string]interface{})
-	var alerta models.Alert
 	var errorGetAll bool
-	alertas := append([]interface{}{})
+	var message string
 
 	errSolicitud := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitud/"+id_solicitud, &Solicitud)
 	if errSolicitud == nil {
@@ -103,8 +103,10 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitudById() {
 // @Param   body        body    {}  true        "body Agregar una evolucion del estado a la solicitud planteada content"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /evoluciones [post]
+// @router /solicitudes/evoluciones [post]
 func (c *SolicitudEvaluacionController) PostSolicitudEvolucionEstado() {
+	defer errorhandler.HandlePanic(&c.Controller)
+
 	defer errorhandler.HandlePanic(&c.Controller)
 
 	var Solicitud map[string]interface{}
@@ -121,10 +123,9 @@ func (c *SolicitudEvaluacionController) PostSolicitudEvolucionEstado() {
 	var DatosIdentificacionPut map[string]interface{}
 	var DatosIdentificacionPost map[string]interface{}
 	var resultado map[string]interface{}
+	var message string
 	resultado = make(map[string]interface{})
-	var alerta models.Alert
 	var errorGetAll bool
-	alertas := append([]interface{}{})
 
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &Solicitud); err == nil {
 		if respuesta := services.SolicitudEstadoPostSolicitud(&resultado, &SolicitudEvolucionEstadoPost, &SolicitudAux, EstadoTipoSolicitudId, &SolicitudAuxPost, Solicitud, &ObservacionPost, &errorGetAll, &alerta, &alertas, &SolicitudAprob, &Tercero, &TerceroPut, &DatosIdentificacion, &DatosIdentificacionPut, &DatosIdentificacionPost, &SolicitudEvolucionEstado); respuesta != nil {
@@ -148,12 +149,14 @@ func (c *SolicitudEvaluacionController) PostSolicitudEvolucionEstado() {
 
 // GetAllSolicitudActualizacionDatos ...
 // @Title GetAllSolicitudActualizacionDatos
-// @Description Consultar todas la solicitudes de actualización de datos
-// @Param	id_estado_tipo_sol	path	int	true	"Id del estado tipo solicitud"
+// @Description Consultar todas la solicitudes de actualización de datos filtradas por el id del tipo de solicitud
+// @Param	id_estado_tipo_solicitud	path	int	true	"Id del estado tipo solicitud"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /estados/:tipo_estado_id [get]
+// @router /solicitudes/estados/:id_estado_tipo_solicitud [get]
 func (c *SolicitudEvaluacionController) GetAllSolicitudActualizacionDatos() {
+	defer errorhandler.HandlePanic(&c.Controller)
+
 	//Consulta a tabla de solicitante la cual trae toda la info de la solicitud
 	defer errorhandler.HandlePanic(&c.Controller)
 
@@ -163,12 +166,8 @@ func (c *SolicitudEvaluacionController) GetAllSolicitudActualizacionDatos() {
 	var Estado map[string]interface{}
 	var Observacion []map[string]interface{}
 	var respuesta []map[string]interface{}
-	//var respuestaAux []map[string]in
-	var resultado map[string]interface{}
-	resultado = make(map[string]interface{})
-	var alerta models.Alert
 	var errorGetAll bool
-	alertas := append([]interface{}{})
+	var message string
 
 	if resp := services.ManejoSolicitudesGetAll(&Solicitudes, Observacion, &respuesta, &TipoSolicitud, &Estado, &errorGetAll, &alertas, &alerta, id_estado_tipo_sol, &resultado); resp != nil {
 		c.Ctx.Output.SetStatus(404)
@@ -191,7 +190,7 @@ func (c *SolicitudEvaluacionController) GetAllSolicitudActualizacionDatos() {
 // @Param	id_estado_tipo_solicitud	path	int	true	"Id del estado del tipo de solictud"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /estados/:tipo_estado_id/terceros/:tercero_id [get]
+// @router /personas/:id_persona/solicitudes/estados/:id_estado_tipo_solicitud [get]
 func (c *SolicitudEvaluacionController) GetDatosSolicitud() {
 	defer errorhandler.HandlePanic(&c.Controller)
 
@@ -201,9 +200,8 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitud() {
 	var TipoDocumentoGet map[string]interface{}
 	var resultado map[string]interface{}
 	resultado = make(map[string]interface{})
-	var alerta models.Alert
 	var errorGetAll bool
-	alertas := append([]interface{}{})
+	var message string
 
 	if respuesta := services.SolicitudGetDatos(&resultado, &TipoDocumentoGet, &errorGetAll, &alertas, &alerta, id_persona, id_estado_tipo_solicitud, &Solicitudes); respuesta != nil {
 		c.Ctx.Output.SetStatus(404)
@@ -225,20 +223,13 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitud() {
 // @Param	id_persona	path	int	true	"Id del estudiante"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /terceros/:persona_id [get]
+// @router /personas/:id_persona/solicitudes [get]
 func (c *SolicitudEvaluacionController) GetSolicitudActualizacionDatos() {
 	defer errorhandler.HandlePanic(&c.Controller)
 
 	id_persona := c.Ctx.Input.Param(":persona_id")
 	var Solicitudes []map[string]interface{}
-	var TipoSolicitud map[string]interface{}
-	var Estado map[string]interface{}
 	var respuesta []map[string]interface{}
-	var resultado map[string]interface{}
-	resultado = make(map[string]interface{})
-	var alerta models.Alert
-	var errorGetAll bool
-	alertas := append([]interface{}{})
 
 	if respuesta := services.ManejoSolicitudesGetActualizacion(&Solicitudes, id_persona, &respuesta, &TipoSolicitud, &Estado, &errorGetAll, &alertas, &alerta, &resultado); respuesta != nil {
 		c.Ctx.Output.SetStatus(404)
@@ -260,7 +251,7 @@ func (c *SolicitudEvaluacionController) GetSolicitudActualizacionDatos() {
 // @Param   body        body    {}  true        "body Agregar solicitud actualizacion datos content"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router / [post]
+// @router /solicitudes [post]
 func (c *SolicitudEvaluacionController) PostSolicitudActualizacionDatos() {
 	defer errorhandler.HandlePanic(&c.Controller)
 
@@ -300,10 +291,13 @@ func (c *SolicitudEvaluacionController) PostSolicitudActualizacionDatos() {
 // PutSolicitudEvaluacion ...
 // @Title PutSolicitudEvaluacion
 // @Description actualiza de forma publica el estado de una solicitud tipo evaluacion
+// @Parama id_solicitud path int true "ID DE LA SOLICITUD"
 // @Success 200 {}
 // @Failure 404 not found resource
-// @router /:id [get]
+// @router /solicitudes/:id_solicitud/estado [get]
 func (c *SolicitudEvaluacionController) PutSolicitudEvaluacion() {
+	defer errorhandler.HandlePanic(&c.Controller)
+
 	defer errorhandler.HandlePanic(&c.Controller)
 
 	//Id de la solicitud
@@ -325,5 +319,6 @@ func (c *SolicitudEvaluacionController) PutSolicitudEvaluacion() {
 		c.Data["system"] = resultadoPutSolicitud
 		c.Abort("400")
 	}
+
 	c.ServeJSON()
 }

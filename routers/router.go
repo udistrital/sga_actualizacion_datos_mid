@@ -14,8 +14,11 @@ import (
 )
 
 func init() {
+
+	beego.ErrorController(&errorhandler.ErrorHandlerController{})
+
 	ns := beego.NewNamespace("/v1",
-		beego.NSNamespace("/solicitudes-evaluacion",
+		beego.NSNamespace("/actualizaciones-datos",
 			beego.NSInclude(
 				&controllers.SolicitudEvaluacionController{},
 			),
