@@ -7,8 +7,8 @@ import (
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
-	"github.com/udistrital/sga_mid_actualizacion_datos/models"
-	"github.com/udistrital/sga_mid_actualizacion_datos/services"
+	"github.com/udistrital/sga_actualizacion_dato_mid/models"
+	"github.com/udistrital/sga_actualizacion_dato_mid/services"
 	"github.com/udistrital/utils_oas/errorhandler"
 	"github.com/udistrital/utils_oas/formatdata"
 	"github.com/udistrital/utils_oas/request"
