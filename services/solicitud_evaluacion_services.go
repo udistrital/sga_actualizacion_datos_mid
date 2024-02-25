@@ -11,6 +11,7 @@ import (
 	"github.com/udistrital/sga_actualizacion_dato_mid/models"
 	"github.com/udistrital/utils_oas/formatdata"
 	"github.com/udistrital/utils_oas/request"
+	"github.com/udistrital/utils_oas/requestresponse"
 	"github.com/udistrital/utils_oas/time_bogota"
 )
 
@@ -790,3 +791,208 @@ func ManejoExito(alerta *models.Alert, alertas *[]interface{}, resultado map[str
 	(*alerta).Type = "OK"
 	(*alerta).Body = *alertas
 }
+
+func DatosSolicitud(id_solicitud string) (APIResponseDTO requestresponse.APIResponse) {
+	var Solicitud map[string]interface{}
+	var TipoDocumentoGet map[string]interface{}
+	var TipoDocumentoActualGet map[string]interface{}
+	var resultado map[string]interface{}
+	resultado = make(map[string]interface{})
+	var alerta models.Alert
+	var errorGetAll bool
+	alertas := append([]interface{}{})
+
+	errSolicitud := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitud/"+id_solicitud, &Solicitud)
+	if errSolicitud == nil {
+		if Solicitud != nil && fmt.Sprintf("%v", Solicitud) != "map[]" {
+			Referencia := Solicitud["Referencia"].(string)
+			resultado["FechaSolicitud"] = Solicitud["FechaRadicacion"]
+			var ReferenciaJson map[string]interface{}
+			if err := json.Unmarshal([]byte(Referencia), &ReferenciaJson); err == nil {
+				formatdata.JsonPrint(ReferenciaJson)
+				TipoSolicitud := Solicitud["EstadoTipoSolicitudId"].(map[string]interface{})["Id"]
+				TipoSolicitudId, _ := strconv.ParseInt(fmt.Sprintf("%v", TipoSolicitud), 10, 64)
+				if TipoSolicitudId == 15 || TipoSolicitudId == 17 || TipoSolicitudId == 20 || TipoSolicitudId == 33 {
+					TipoDocumento := fmt.Sprintf("%v", ReferenciaJson["DatosAnteriores"].(map[string]interface{})["TipoDocumentoActual"].(map[string]interface{})["Id"])
+					ConfigurarResultadoGetSolicitudId(&resultado, &ReferenciaJson, 1)
+
+					if respuestaTipo := SolicitudTipoDocGetSolicitudId(TipoDocumento, &TipoDocumentoGet, &resultado, &alerta, &alertas, &errorGetAll); respuestaTipo != nil {
+						APIResponseDTO = requestresponse.APIResponseDTO(false, 404, nil, respuestaTipo)
+					}
+
+					if respuestaDoc := SolicitudDocActualGetSolicitudId(ReferenciaJson, &TipoDocumentoActualGet, &resultado, &alerta, &alertas, &errorGetAll); respuestaDoc != nil {
+						APIResponseDTO = requestresponse.APIResponseDTO(false, 404, nil, respuestaDoc)
+					}
+				} else if TipoSolicitudId == 16 || TipoSolicitudId == 18 || TipoSolicitudId == 19 || TipoSolicitudId == 32 {
+					ConfigurarResultadoGetSolicitudId(&resultado, &ReferenciaJson, 2)
+				}
+			}
+		} else {
+			ManejoError(&alerta, &alertas, "No data found", &errorGetAll)
+			APIResponseDTO = requestresponse.APIResponseDTO(false, 404, nil, errorGetAll)
+		}
+	} else {
+		ManejoError(&alerta, &alertas, "", &errorGetAll, errSolicitud)
+		APIResponseDTO = requestresponse.APIResponseDTO(false, 404, nil, errSolicitud.Error())
+	}
+
+	if !errorGetAll {
+		APIResponseDTO = requestresponse.APIResponseDTO(true, 200, nil, resultado)
+		return APIResponseDTO
+	}
+	return APIResponseDTO
+}
+
+func SolicitudEvolucion(data []byte) (APIResponseDTO requestresponse.APIResponse) {
+
+	var Solicitud map[string]interface{}
+	var SolicitudAux map[string]interface{}
+	var SolicitudAuxPost map[string]interface{}
+	var SolicitudEvolucionEstado []map[string]interface{}
+	var EstadoTipoSolicitudId int
+	var SolicitudEvolucionEstadoPost map[string]interface{}
+	var ObservacionPost map[string]interface{}
+	var SolicitudAprob map[string]interface{}
+	var Tercero map[string]interface{}
+	var TerceroPut map[string]interface{}
+	var DatosIdentificacion []map[string]interface{}
+	var DatosIdentificacionPut map[string]interface{}
+	var DatosIdentificacionPost map[string]interface{}
+	var resultado map[string]interface{}
+	resultado = make(map[string]interface{})
+	var alerta models.Alert
+	var errorGetAll bool
+	alertas := append([]interface{}{})
+
+	if err := json.Unmarshal(data, &Solicitud); err == nil {
+		if respuesta := SolicitudEstadoPostSolicitud(&resultado, &SolicitudEvolucionEstadoPost, &SolicitudAux, EstadoTipoSolicitudId, &SolicitudAuxPost, Solicitud, &ObservacionPost, &errorGetAll, &alerta, &alertas, &SolicitudAprob, &Tercero, &TerceroPut, &DatosIdentificacion, &DatosIdentificacionPut, &DatosIdentificacionPost, &SolicitudEvolucionEstado); respuesta != nil {
+			APIResponseDTO = requestresponse.APIResponseDTO(false, 404, nil, respuesta)
+		}
+	} else {
+		ManejoError(&alerta, &alertas, "", &errorGetAll, err)
+		APIResponseDTO = requestresponse.APIResponseDTO(false, 404, nil, err.Error())
+	}
+
+	if !errorGetAll {
+		APIResponseDTO = requestresponse.APIResponseDTO(true, 200, nil, resultado)
+		return APIResponseDTO
+	}
+	return APIResponseDTO
+}
+
+func SolicitudActualizacionDatos(id_estado_tipo_sol string) (APIResponseDTO requestresponse.APIResponse){
+	var Solicitudes []map[string]interface{}
+	var TipoSolicitud map[string]interface{}
+	var Estado map[string]interface{}
+	var Observacion []map[string]interface{}
+	var respuesta []map[string]interface{}
+	//var respuestaAux []map[string]in
+	var resultado map[string]interface{}
+	resultado = make(map[string]interface{})
+	var alerta models.Alert
+	var errorGetAll bool
+	alertas := append([]interface{}{})
+
+	if resp := ManejoSolicitudesGetAll(&Solicitudes, Observacion, &respuesta, &TipoSolicitud, &Estado, &errorGetAll, &alertas, &alerta, id_estado_tipo_sol, &resultado); resp != nil {
+		APIResponseDTO = requestresponse.APIResponseDTO(false, 404, nil, resp)
+	}
+
+	if !errorGetAll {
+		APIResponseDTO = requestresponse.APIResponseDTO(true, 200, resultado)
+		return APIResponseDTO
+	}
+	return APIResponseDTO
+}
+
+func GetDatosSolicitud(id_persona string, id_estado_tipo_solicitud string) (APIResponseDTO requestresponse.APIResponse){
+	var Solicitudes []map[string]interface{}
+	var TipoDocumentoGet map[string]interface{}
+	var resultado map[string]interface{}
+	resultado = make(map[string]interface{})
+	var alerta models.Alert
+	var errorGetAll bool
+	alertas := append([]interface{}{})
+
+	if respuesta := SolicitudGetDatos(&resultado, &TipoDocumentoGet, &errorGetAll, &alertas, &alerta, id_persona, id_estado_tipo_solicitud, &Solicitudes); respuesta != nil {
+		APIResponseDTO = requestresponse.APIResponseDTO(false, 404, nil, respuesta)
+	}
+
+	if !errorGetAll {
+		APIResponseDTO = requestresponse.APIResponseDTO(true, 200, resultado)
+		return APIResponseDTO
+	}
+	return APIResponseDTO
+}
+
+func GetSolictudActualizacion(id_persona string) (APIResponseDTO requestresponse.APIResponse){
+	var Solicitudes []map[string]interface{}
+	var TipoSolicitud map[string]interface{}
+	var Estado map[string]interface{}
+	var respuesta []map[string]interface{}
+	var resultado map[string]interface{}
+	resultado = make(map[string]interface{})
+	var alerta models.Alert
+	var errorGetAll bool
+	alertas := append([]interface{}{})
+
+	if respuesta := ManejoSolicitudesGetActualizacion(&Solicitudes, id_persona, &respuesta, &TipoSolicitud, &Estado, &errorGetAll, &alertas, &alerta, &resultado); respuesta != nil {
+		APIResponseDTO = requestresponse.APIResponseDTO(false, 404, nil, respuesta)
+	}
+
+	if !errorGetAll {
+		APIResponseDTO = requestresponse.APIResponseDTO(true, 200, resultado)
+		return APIResponseDTO
+	}
+	return APIResponseDTO
+}
+
+func ActualizacionDatosPost(data []byte)  (APIResponseDTO requestresponse.APIResponse){
+	var Solicitud map[string]interface{}
+	var SolicitudPadre map[string]interface{}
+	var SolicitudPost map[string]interface{}
+	var SolicitantePost map[string]interface{}
+	var Referencia string
+	var IdEstadoTipoSolicitud int
+	var SolicitudEvolucionEstadoPost map[string]interface{}
+	var resultado map[string]interface{}
+	resultado = make(map[string]interface{})
+	var alerta models.Alert
+	var errorGetAll bool
+	alertas := append([]interface{}{})
+
+	if err := json.Unmarshal(data, &Solicitud); err == nil {
+		if respuesta := ManejoSolicitudesPostActualizacion(IdEstadoTipoSolicitud, &SolicitudEvolucionEstadoPost, &resultado, &SolicitantePost, &errorGetAll, &alertas, &alerta, &SolicitudPost, Solicitud, Referencia, &SolicitudPadre); respuesta != nil {
+			APIResponseDTO = requestresponse.APIResponseDTO(false, 404, nil, respuesta)
+		}
+	} else {
+		APIResponseDTO = requestresponse.APIResponseDTO(false, 404, nil, err.Error())
+	}
+
+	if !errorGetAll {
+		APIResponseDTO = requestresponse.APIResponseDTO(true, 200, resultado)
+		return APIResponseDTO
+	}
+	return APIResponseDTO
+}
+
+func SolicitudEvaluacionPut(idSolicitud string) (APIResponseDTO requestresponse.APIResponse){
+	//resultado resultado final
+	var resultadoPutSolicitud map[string]interface{}
+	resultadoRechazo := make(map[string]interface{})
+
+	var solicitudEvaluacion map[string]interface{}
+	if solicitudEvaluacionList, errGet := models.GetOneSolicitudDocente(idSolicitud); errGet == nil {
+		if errorSystem, dataJson := ManejoSolicitudes(solicitudEvaluacion, solicitudEvaluacionList, resultadoRechazo, idSolicitud, resultadoPutSolicitud); errorSystem == nil {
+			APIResponseDTO = requestresponse.APIResponseDTO(true, 200, dataJson)
+		} else {
+			APIResponseDTO = requestresponse.APIResponseDTO(false, 400, nil,errorSystem)
+			return APIResponseDTO
+		}
+	} else {
+		logs.Error(errGet)
+		APIResponseDTO = requestresponse.APIResponseDTO(false, 400, nil, errGet)
+		return APIResponseDTO
+	}
+	return APIResponseDTO
+}
+
