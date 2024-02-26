@@ -8,17 +8,14 @@
 package routers
 
 import (
+	"github.com/udistrital/sga_actualizacion_dato_mid/controllers"
+
 	"github.com/astaxie/beego"
-	"github.com/udistrital/sga_mid_actualizacion_datos/controllers"
-	"github.com/udistrital/utils_oas/errorhandler"
 )
 
 func init() {
-
-	beego.ErrorController(&errorhandler.ErrorHandlerController{})
-
 	ns := beego.NewNamespace("/v1",
-		beego.NSNamespace("/actualizaciones-datos",
+		beego.NSNamespace("/solicitudes-evaluacion",
 			beego.NSInclude(
 				&controllers.SolicitudEvaluacionController{},
 			),
