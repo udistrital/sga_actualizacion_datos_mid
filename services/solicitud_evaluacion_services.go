@@ -880,7 +880,7 @@ func SolicitudEvolucion(data []byte) (APIResponseDTO requestresponse.APIResponse
 	return APIResponseDTO
 }
 
-func SolicitudActualizacionDatos(id_estado_tipo_sol string) (APIResponseDTO requestresponse.APIResponse){
+func SolicitudActualizacionDatos(id_estado_tipo_sol string) (APIResponseDTO requestresponse.APIResponse) {
 	var Solicitudes []map[string]interface{}
 	var TipoSolicitud map[string]interface{}
 	var Estado map[string]interface{}
@@ -904,7 +904,7 @@ func SolicitudActualizacionDatos(id_estado_tipo_sol string) (APIResponseDTO requ
 	return APIResponseDTO
 }
 
-func GetDatosSolicitud(id_persona string, id_estado_tipo_solicitud string) (APIResponseDTO requestresponse.APIResponse){
+func GetDatosSolicitud(id_persona string, id_estado_tipo_solicitud string) (APIResponseDTO requestresponse.APIResponse) {
 	var Solicitudes []map[string]interface{}
 	var TipoDocumentoGet map[string]interface{}
 	var resultado map[string]interface{}
@@ -924,7 +924,7 @@ func GetDatosSolicitud(id_persona string, id_estado_tipo_solicitud string) (APIR
 	return APIResponseDTO
 }
 
-func GetSolictudActualizacion(id_persona string) (APIResponseDTO requestresponse.APIResponse){
+func GetSolictudActualizacion(id_persona string) (APIResponseDTO requestresponse.APIResponse) {
 	var Solicitudes []map[string]interface{}
 	var TipoSolicitud map[string]interface{}
 	var Estado map[string]interface{}
@@ -946,7 +946,7 @@ func GetSolictudActualizacion(id_persona string) (APIResponseDTO requestresponse
 	return APIResponseDTO
 }
 
-func ActualizacionDatosPost(data []byte)  (APIResponseDTO requestresponse.APIResponse){
+func ActualizacionDatosPost(data []byte) (APIResponseDTO requestresponse.APIResponse) {
 	var Solicitud map[string]interface{}
 	var SolicitudPadre map[string]interface{}
 	var SolicitudPost map[string]interface{}
@@ -975,7 +975,7 @@ func ActualizacionDatosPost(data []byte)  (APIResponseDTO requestresponse.APIRes
 	return APIResponseDTO
 }
 
-func SolicitudEvaluacionPut(idSolicitud string) (APIResponseDTO requestresponse.APIResponse){
+func SolicitudEvaluacionPut(idSolicitud string) (APIResponseDTO requestresponse.APIResponse) {
 	//resultado resultado final
 	var resultadoPutSolicitud map[string]interface{}
 	resultadoRechazo := make(map[string]interface{})
@@ -985,7 +985,7 @@ func SolicitudEvaluacionPut(idSolicitud string) (APIResponseDTO requestresponse.
 		if errorSystem, dataJson := ManejoSolicitudes(solicitudEvaluacion, solicitudEvaluacionList, resultadoRechazo, idSolicitud, resultadoPutSolicitud); errorSystem == nil {
 			APIResponseDTO = requestresponse.APIResponseDTO(true, 200, dataJson)
 		} else {
-			APIResponseDTO = requestresponse.APIResponseDTO(false, 400, nil,errorSystem)
+			APIResponseDTO = requestresponse.APIResponseDTO(false, 400, nil, errorSystem)
 			return APIResponseDTO
 		}
 	} else {
@@ -995,4 +995,3 @@ func SolicitudEvaluacionPut(idSolicitud string) (APIResponseDTO requestresponse.
 	}
 	return APIResponseDTO
 }
-

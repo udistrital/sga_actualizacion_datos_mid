@@ -21,10 +21,10 @@ TERCEROS_SERVICE: [Servicio API TERCEROS]
 ### Ejecución del Proyecto
 ```shell
 #1. Obtener el repositorio con Go
-go get github.com/udistrital/sga_mid_actualizacion_datos
+go get github.com/udistrital/sga_actualizacion_dato_mid
 
 #2. Moverse a la carpeta del repositorio
-cd $GOPATH/src/github.com/udistrital/sga_mid_actualizacion_datos
+cd $GOPATH/src/github.com/udistrital/sga_actualizacion_dato_mid
 
 # 3. Moverse a la rama **develop**
 git pull origin develop && git checkout develop
@@ -35,17 +35,17 @@ SGA_MID_HTTP_PORT=8080 RULER_URL=127.0.0.1:27017 SGA_MID_SOLICITUD_EVALUACION_SO
 
 ### Ejecución Dockerfile
 ```shell
-# docker build --tag=sga_mid_actualizacion_datos . --no-cache
-# docker run -p 80:80 sga_mid_actualizacion_datos
+# docker build --tag=sga_actualizacion_dato_mid . --no-cache
+# docker run -p 80:80 sga_actualizacion_dato_mid
 ```
 
 ### Ejecución docker-compose
 ```shell
 #1. Clonar el repositorio
-git clone -b develop https://github.com/udistrital/sga_mid_actualizacion_datos
+git clone -b develop https://github.com/udistrital/sga_actualizacion_dato_mid
 
 #2. Moverse a la carpeta del repositorio
-cd sga_mid_actualizacion_datos
+cd sga_actualizacion_dato_mid
 
 #3. Crear un fichero con el nombre **custom.env**
 # En windows ejecutar:* ` ni custom.env`
@@ -72,13 +72,13 @@ Pruebas unitarias
 
 | Develop | Relese 0.0.1 | Master |
 | -- | -- | -- |
-| [![Build Status](https://hubci.portaloas.udistrital.edu.co/api/badges/udistrital/sga_mid_actualizacion_datos/status.svg?ref=refs/heads/develop)](https://hubci.portaloas.udistrital.edu.co/udistrital/sga_mid_actualizacion_datos) | [![Build Status](https://hubci.portaloas.udistrital.edu.co/api/badges/udistrital/sga_mid_actualizacion_datos/status.svg?ref=refs/heads/release/0.0.1)](https://hubci.portaloas.udistrital.edu.co/udistrital/sga_mid_actualizacion_datos) | [![Build Status](https://hubci.portaloas.udistrital.edu.co/api/badges/udistrital/sga_mid_actualizacion_datos/status.svg)](https://hubci.portaloas.udistrital.edu.co/udistrital/sga_mid_actualizacion_datos) |
+| [![Build Status](https://hubci.portaloas.udistrital.edu.co/api/badges/udistrital/sga_actualizacion_dato_mid/status.svg?ref=refs/heads/develop)](https://hubci.portaloas.udistrital.edu.co/udistrital/sga_actualizacion_dato_mid) | [![Build Status](https://hubci.portaloas.udistrital.edu.co/api/badges/udistrital/sga_actualizacion_dato_mid/status.svg?ref=refs/heads/release/0.0.1)](https://hubci.portaloas.udistrital.edu.co/udistrital/sga_actualizacion_dato_mid) | [![Build Status](https://hubci.portaloas.udistrital.edu.co/api/badges/udistrital/sga_actualizacion_dato_mid/status.svg)](https://hubci.portaloas.udistrital.edu.co/udistrital/sga_actualizacion_dato_mid) |
 
 ## Licencia
 
-This file is part of sga_mid_actualizacion_datos.
+This file is part of sga_actualizacion_dato_mid.
 
-sga_mid_actualizacion_datos is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+sga_actualizacion_dato_mid is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
 sga_mid is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
