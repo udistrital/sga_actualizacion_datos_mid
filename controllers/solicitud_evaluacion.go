@@ -25,7 +25,7 @@ func (c *SolicitudEvaluacionController) URLMapping() {
 // GetDatosSolicitudById ...
 // @Title GetDatosSolicitudById
 // @Description Consultar los datos ingresados por el estudiante en su solicitud consultando por id de la solicitud
-// @Param	id_solicitud	path	int	true	"Id de la solicitud"
+// @Param	solicitud_id	path	int	true	"Id de la solicitud"
 // @Success 200 {}
 // @Failure 403 body is empty
 // @router /:solicitud_id [get]
@@ -63,7 +63,7 @@ func (c *SolicitudEvaluacionController) PostSolicitudEvolucionEstado() {
 // GetAllSolicitudActualizacionDatos ...
 // @Title GetAllSolicitudActualizacionDatos
 // @Description Consultar todas la solicitudes de actualización de datos
-// @Param	id_estado_tipo_sol	path	int	true	"Id del estado tipo solicitud"
+// @Param	tipo_estado_id	path	int	true	"Id del estado tipo solicitud"
 // @Success 200 {}
 // @Failure 403 body is empty
 // @router /estados/:tipo_estado_id [get]
@@ -83,8 +83,8 @@ func (c *SolicitudEvaluacionController) GetAllSolicitudActualizacionDatos() {
 // GetDatosSolicitud ...
 // @Title GetDatosSolicitud
 // @Description Consultar los datos ingresados por el estudiante en su solicitud
-// @Param	id_persona	path	int	true	"Id del estudiante"
-// @Param	id_estado_tipo_solicitud	path	int	true	"Id del estado del tipo de solictud"
+// @Param	tercero_id	path	int	true	"Id del estudiante"
+// @Param	tipo_estado_id	path	int	true	"Id del estado del tipo de solictud"
 // @Success 200 {}
 // @Failure 403 body is empty
 // @router /estados/:tipo_estado_id/terceros/:tercero_id [get]
@@ -105,7 +105,7 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitud() {
 // GetSolicitudActualizacionDatos ...
 // @Title GetSolicitudActualizacionDatos
 // @Description Consultar la solicitudes de un estudiante de actualización de datos
-// @Param	id_persona	path	int	true	"Id del estudiante"
+// @Param	persona_id	path	int	true	"Id del estudiante"
 // @Success 200 {}
 // @Failure 403 body is empty
 // @router /terceros/:persona_id [get]
@@ -143,9 +143,10 @@ func (c *SolicitudEvaluacionController) PostSolicitudActualizacionDatos() {
 // PutSolicitudEvaluacion ...
 // @Title PutSolicitudEvaluacion
 // @Description actualiza de forma publica el estado de una solicitud tipo evaluacion
+// @Param   id        path	int	true	"Id solicitud"
 // @Success 200 {}
 // @Failure 404 not found resource
-// @router /:id [get]
+// @router /:id [put]
 func (c *SolicitudEvaluacionController) PutSolicitudEvaluacion() {
 	defer errorhandler.HandlePanic(&c.Controller)
 

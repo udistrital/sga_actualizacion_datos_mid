@@ -20,7 +20,7 @@ func init() {
         beego.ControllerComments{
             Method: "PutSolicitudEvaluacion",
             Router: "/:id",
-            AllowHTTPMethods: []string{"get"},
+            AllowHTTPMethods: []string{"put"},
             MethodParams: param.Make(),
             Filters: nil,
             Params: nil})

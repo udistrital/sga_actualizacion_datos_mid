@@ -53,7 +53,7 @@
                 "parameters": [
                     {
                         "in": "path",
-                        "name": "id_estado_tipo_sol",
+                        "name": "tipo_estado_id",
                         "description": "Id del estado tipo solicitud",
                         "required": true,
                         "type": "integer",
@@ -80,7 +80,7 @@
                 "parameters": [
                     {
                         "in": "path",
-                        "name": "id_persona",
+                        "name": "tercero_id",
                         "description": "Id del estudiante",
                         "required": true,
                         "type": "integer",
@@ -88,7 +88,7 @@
                     },
                     {
                         "in": "path",
-                        "name": "id_estado_tipo_solicitud",
+                        "name": "tipo_estado_id",
                         "description": "Id del estado del tipo de solictud",
                         "required": true,
                         "type": "integer",
@@ -143,7 +143,7 @@
                 "parameters": [
                     {
                         "in": "path",
-                        "name": "id_persona",
+                        "name": "persona_id",
                         "description": "Id del estudiante",
                         "required": true,
                         "type": "integer",
@@ -161,12 +161,22 @@
             }
         },
         "/solicitudes-evaluacion/{id}": {
-            "get": {
+            "put": {
                 "tags": [
                     "solicitudes-evaluacion"
                 ],
                 "description": "actualiza de forma publica el estado de una solicitud tipo evaluacion",
                 "operationId": "SolicitudEvaluacionController.PutSolicitudEvaluacion",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "description": "Id solicitud",
+                        "required": true,
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "{}"
@@ -187,7 +197,7 @@
                 "parameters": [
                     {
                         "in": "path",
-                        "name": "id_solicitud",
+                        "name": "solicitud_id",
                         "description": "Id de la solicitud",
                         "required": true,
                         "type": "integer",
