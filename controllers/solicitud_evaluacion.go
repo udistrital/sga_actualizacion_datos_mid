@@ -28,11 +28,11 @@ func (c *SolicitudEvaluacionController) URLMapping() {
 // @Param	id_solicitud	path	int	true	"Id de la solicitud"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /:solicitud_id [get]
+// @router /:id_solicitud [get]
 func (c *SolicitudEvaluacionController) GetDatosSolicitudById() {
 	defer errorhandler.HandlePanic(&c.Controller)
 
-	id_solicitud := c.Ctx.Input.Param(":solicitud_id")
+	id_solicitud := c.Ctx.Input.Param(":id_solicitud")
 
 	respuesta := services.DatosSolicitud(id_solicitud)
 
@@ -63,15 +63,15 @@ func (c *SolicitudEvaluacionController) PostSolicitudEvolucionEstado() {
 // GetAllSolicitudActualizacionDatos ...
 // @Title GetAllSolicitudActualizacionDatos
 // @Description Consultar todas la solicitudes de actualización de datos
-// @Param	id_estado_tipo_sol	path	int	true	"Id del estado tipo solicitud"
+// @Param	id_estado_tipo_solicitud	path	int	true	"Id del estado tipo solicitud"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /estados/:tipo_estado_id [get]
+// @router /estados/:id_estado_tipo_solicitud [get]
 func (c *SolicitudEvaluacionController) GetAllSolicitudActualizacionDatos() {
 	//Consulta a tabla de solicitante la cual trae toda la info de la solicitud
 	defer errorhandler.HandlePanic(&c.Controller)
 
-	id_estado_tipo_sol := c.Ctx.Input.Param(":tipo_estado_id")
+	id_estado_tipo_sol := c.Ctx.Input.Param(":id_estado_tipo_solicitud")
 
 	respuesta := services.SolicitudActualizacionDatos(id_estado_tipo_sol)
 
@@ -83,16 +83,16 @@ func (c *SolicitudEvaluacionController) GetAllSolicitudActualizacionDatos() {
 // GetDatosSolicitud ...
 // @Title GetDatosSolicitud
 // @Description Consultar los datos ingresados por el estudiante en su solicitud
-// @Param	id_persona	path	int	true	"Id del estudiante"
+// @Param	id_tercero	path	int	true	"Id del estudiante"
 // @Param	id_estado_tipo_solicitud	path	int	true	"Id del estado del tipo de solictud"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /estados/:tipo_estado_id/terceros/:tercero_id [get]
+// @router /estudiantes/:id_tercero/estados/:id_estado_tipo_solicitud [get]
 func (c *SolicitudEvaluacionController) GetDatosSolicitud() {
 	defer errorhandler.HandlePanic(&c.Controller)
-
-	id_persona := c.Ctx.Input.Param(":tercero_id")
-	id_estado_tipo_solicitud := c.Ctx.Input.Param(":tipo_estado_id")
+	// id_persona --> id del tercero
+	id_persona := c.Ctx.Input.Param(":id_tercero")
+	id_estado_tipo_solicitud := c.Ctx.Input.Param(":id_estado_tipo_solicitud")
 
 	respuesta := services.GetDatosSolicitud(id_persona, id_estado_tipo_solicitud)
 
@@ -105,14 +105,14 @@ func (c *SolicitudEvaluacionController) GetDatosSolicitud() {
 // GetSolicitudActualizacionDatos ...
 // @Title GetSolicitudActualizacionDatos
 // @Description Consultar la solicitudes de un estudiante de actualización de datos
-// @Param	id_persona	path	int	true	"Id del estudiante"
+// @Param	id_tercero	path	int	true	"Id del estudiante"
 // @Success 200 {}
 // @Failure 403 body is empty
-// @router /terceros/:persona_id [get]
+// @router /estudiantes/:id_tercero [get]
 func (c *SolicitudEvaluacionController) GetSolicitudActualizacionDatos() {
 	defer errorhandler.HandlePanic(&c.Controller)
 
-	id_persona := c.Ctx.Input.Param(":persona_id")
+	id_persona := c.Ctx.Input.Param(":id_tercero")
 
 	respuesta := services.GetSolictudActualizacion(id_persona)
 
@@ -143,9 +143,10 @@ func (c *SolicitudEvaluacionController) PostSolicitudActualizacionDatos() {
 // PutSolicitudEvaluacion ...
 // @Title PutSolicitudEvaluacion
 // @Description actualiza de forma publica el estado de una solicitud tipo evaluacion
+// @Param	id	path	int	true	"Id de la solicitud"
 // @Success 200 {}
 // @Failure 404 not found resource
-// @router /:id [get]
+// @router /:id/evaluacion [get]
 func (c *SolicitudEvaluacionController) PutSolicitudEvaluacion() {
 	defer errorhandler.HandlePanic(&c.Controller)
 
