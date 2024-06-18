@@ -667,6 +667,20 @@ func solicitudActualizacionPostActualizacion(IdTercero interface{}, IdEstadoTipo
 			(*resultado)["Solicitud"] = (*SolicitudPost)["Data"]
 			IdSolicitud := (*SolicitudPost)["Data"].(map[string]interface{})["Id"]
 
+			// Verifica si la solicitud tiene una solicitud padre asociada
+			if SolicitudPadre, ok := SolicitudActualizacion["SolicitudPadreId"].(map[string]interface{}); ok && len(SolicitudPadre) > 0 {
+				IdSolicitudPadre := fmt.Sprintf("%v", SolicitudPadre["Id"])
+
+				SolicitudPadre["Activo"] = false
+
+				var respuestaUpdate map[string]interface{}
+				errSolicitudPadreUpdate := request.SendJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitud/"+IdSolicitudPadre, "PUT", &respuestaUpdate, SolicitudPadre)
+				if errSolicitudPadreUpdate != nil {
+					ManejoError(alerta, alertas, "", errorGetAll, errSolicitudPadreUpdate)
+					return map[string]interface{}{"Response": *alerta}
+				}
+			}
+
 			//POST tabla solicitante
 			return solicitudPostPostActualizacion(IdTercero, IdSolicitud, IdEstadoTipoSolicitud, SolicitudJson, SolicitudEvolucionEstadoPost, resultado, SolicitantePost, errorGetAll, alertas, alerta)
 		} else {
@@ -718,13 +732,14 @@ func ManejoSolicitudesPostActualizacion(IdEstadoTipoSolicitud int, SolicitudEvol
 		IdSolicutudPadre = Solicitud["SolicitudPadreId"].(string)
 		errSolicitudPadre := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitud/"+IdSolicutudPadre, SolicitudPadre)
 		if errSolicitudPadre == nil {
-			//POST tabla solicitud
+			//POST tabla solicitud con solicitud padre asociada
 			asignarSolicitudActualizacion(*SolicitudPadre, &SolicitudActualizacion, IdEstadoTipoSolicitud, Referencia, SolicitudJson)
 		} else {
-			//POST tabla solicitud
+			//POST tabla solicitud sin solicitud padre asociada
 			asignarSolicitudActualizacion(nil, &SolicitudActualizacion, IdEstadoTipoSolicitud, Referencia, SolicitudJson)
 		}
 	} else {
+		//POST tabla solicitud sin solicitud padre asociada
 		asignarSolicitudActualizacion(nil, &SolicitudActualizacion, IdEstadoTipoSolicitud, Referencia, SolicitudJson)
 	}
 
