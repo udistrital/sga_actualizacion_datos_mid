@@ -19,7 +19,7 @@ func init() {
     beego.GlobalControllerRouter["github.com/udistrital/sga_actualizacion_dato_mid/controllers:SolicitudEvaluacionController"] = append(beego.GlobalControllerRouter["github.com/udistrital/sga_actualizacion_dato_mid/controllers:SolicitudEvaluacionController"],
         beego.ControllerComments{
             Method: "PutSolicitudEvaluacion",
-            Router: "/:id",
+            Router: "/:id/evaluacion",
             AllowHTTPMethods: []string{"get"},
             MethodParams: param.Make(),
             Filters: nil,
@@ -28,7 +28,7 @@ func init() {
     beego.GlobalControllerRouter["github.com/udistrital/sga_actualizacion_dato_mid/controllers:SolicitudEvaluacionController"] = append(beego.GlobalControllerRouter["github.com/udistrital/sga_actualizacion_dato_mid/controllers:SolicitudEvaluacionController"],
         beego.ControllerComments{
             Method: "GetDatosSolicitudById",
-            Router: "/:solicitud_id",
+            Router: "/:id_solicitud",
             AllowHTTPMethods: []string{"get"},
             MethodParams: param.Make(),
             Filters: nil,
@@ -37,7 +37,16 @@ func init() {
     beego.GlobalControllerRouter["github.com/udistrital/sga_actualizacion_dato_mid/controllers:SolicitudEvaluacionController"] = append(beego.GlobalControllerRouter["github.com/udistrital/sga_actualizacion_dato_mid/controllers:SolicitudEvaluacionController"],
         beego.ControllerComments{
             Method: "GetAllSolicitudActualizacionDatos",
-            Router: "/estados/:tipo_estado_id",
+            Router: "/estados/:id_estado_tipo_solicitud",
+            AllowHTTPMethods: []string{"get"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
+    beego.GlobalControllerRouter["github.com/udistrital/sga_actualizacion_dato_mid/controllers:SolicitudEvaluacionController"] = append(beego.GlobalControllerRouter["github.com/udistrital/sga_actualizacion_dato_mid/controllers:SolicitudEvaluacionController"],
+        beego.ControllerComments{
+            Method: "GetSolicitudActualizacionDatos",
+            Router: "/estudiantes/:id_tercero",
             AllowHTTPMethods: []string{"get"},
             MethodParams: param.Make(),
             Filters: nil,
@@ -46,7 +55,7 @@ func init() {
     beego.GlobalControllerRouter["github.com/udistrital/sga_actualizacion_dato_mid/controllers:SolicitudEvaluacionController"] = append(beego.GlobalControllerRouter["github.com/udistrital/sga_actualizacion_dato_mid/controllers:SolicitudEvaluacionController"],
         beego.ControllerComments{
             Method: "GetDatosSolicitud",
-            Router: "/estados/:tipo_estado_id/terceros/:tercero_id",
+            Router: "/estudiantes/:id_tercero/estados/:id_estado_tipo_solicitud",
             AllowHTTPMethods: []string{"get"},
             MethodParams: param.Make(),
             Filters: nil,
@@ -57,15 +66,6 @@ func init() {
             Method: "PostSolicitudEvolucionEstado",
             Router: "/evoluciones",
             AllowHTTPMethods: []string{"post"},
-            MethodParams: param.Make(),
-            Filters: nil,
-            Params: nil})
-
-    beego.GlobalControllerRouter["github.com/udistrital/sga_actualizacion_dato_mid/controllers:SolicitudEvaluacionController"] = append(beego.GlobalControllerRouter["github.com/udistrital/sga_actualizacion_dato_mid/controllers:SolicitudEvaluacionController"],
-        beego.ControllerComments{
-            Method: "GetSolicitudActualizacionDatos",
-            Router: "/terceros/:persona_id",
-            AllowHTTPMethods: []string{"get"},
             MethodParams: param.Make(),
             Filters: nil,
             Params: nil})

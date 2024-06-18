@@ -837,7 +837,7 @@ func DatosSolicitud(id_solicitud string) (APIResponseDTO requestresponse.APIResp
 	}
 
 	if !errorGetAll {
-		APIResponseDTO = requestresponse.APIResponseDTO(true, 200, nil, resultado)
+		APIResponseDTO = requestresponse.APIResponseDTO(true, 200, resultado, nil)
 		return APIResponseDTO
 	}
 	return APIResponseDTO
