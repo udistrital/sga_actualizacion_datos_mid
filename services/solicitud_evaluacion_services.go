@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -12,7 +13,6 @@ import (
 	"github.com/udistrital/utils_oas/formatdata"
 	"github.com/udistrital/utils_oas/request"
 	"github.com/udistrital/utils_oas/requestresponse"
-	"github.com/udistrital/utils_oas/time_bogota"
 )
 
 // FUNCIONES QUE SE USAN EN GET DATOS SOLICITUD BY ID
@@ -133,7 +133,7 @@ func solicitudDatosIdentificacionPostSolicitud(ReferenciaJson map[string]interfa
 			"Id": TerceroId,
 		},
 		"Numero":          ReferenciaJson["DatosNuevos"].(map[string]interface{})["NumeroNuevo"],
-		"FechaExpedicion": time_bogota.TiempoCorreccionFormato(ReferenciaJson["DatosNuevos"].(map[string]interface{})["FechaExpedicionNuevo"].(string)),
+		"FechaExpedicion": ReferenciaJson["DatosNuevos"].(map[string]interface{})["FechaExpedicionNuevo"].(string) + "T00:00:00Z",
 		"Activo":          true,
 	}
 	errDatosIDNuevo := request.SendJson("http://"+beego.AppConfig.String("TercerosService")+"datos_identificacion", "POST", DatosIdentificacionPost, DatosIdentificacionNuevo)
@@ -333,8 +333,10 @@ func SolicitudEstadoPostSolicitud(resultado *map[string]interface{}, SolicitudEv
 					EstadoTipoSolicitudId = 17
 				case 11.0: // Rechazado
 					EstadoTipoSolicitudId = 20
-				case 14.0: // Rectificar -> Modificada
+				case 17.0: // Rectificar -> Modificada
 					EstadoTipoSolicitudId = 33
+				default:
+					return map[string]interface{}{"Response": "Tipo de solicitud no permitido"}
 				}
 			} else if TipoSolicitudId == 4 {
 				//El tipo de solicitud es de cambio de nombre
@@ -343,9 +345,13 @@ func SolicitudEstadoPostSolicitud(resultado *map[string]interface{}, SolicitudEv
 					EstadoTipoSolicitudId = 18
 				case 11.0: // Rechazado
 					EstadoTipoSolicitudId = 19
-				case 14.0: // Rectificar -> Modificada
+				case 17.0: // Rectificar -> Modificada
 					EstadoTipoSolicitudId = 32
+				default:
+					return map[string]interface{}{"Response": "Tipo de solicitud no permitido"}
 				}
+			} else {
+				return map[string]interface{}{"Response": "Tipo de solicitud no permitido"}
 			}
 
 			//JSON de la nueva evolución del estado de la solicitud
@@ -578,11 +584,27 @@ func solicitudTipoGetActualizacion(Solicitudes []map[string]interface{}, i int, 
 func ManejoSolicitudesGetActualizacion(Solicitudes *[]map[string]interface{}, id_persona string, respuesta *[]map[string]interface{}, TipoSolicitud *map[string]interface{}, Estado *map[string]interface{}, errorGetAll *bool, alertas *[]interface{}, alerta *models.Alert, resultado *map[string]interface{}) interface{} {
 	errSolicitud := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitante?query=TerceroId:"+id_persona+"&sortby=Id&order=asc&limit=0", Solicitudes)
 	if errSolicitud == nil {
+
 		if *Solicitudes != nil && fmt.Sprintf("%v", (*Solicitudes)[0]) != "map[]" {
+			// Filtrar solicitudes activas de actualización de datos
+			var solicitudesActivas []map[string]interface{}
+			for _, solicitud := range *Solicitudes {
+				if solicitudId, ok := solicitud["SolicitudId"].(map[string]interface{}); ok {
+					if activo, ok := solicitudId["Activo"].(bool); ok && activo {
+						solicitudesActivas = append(solicitudesActivas, solicitud)
+					}
+				}
+			}
+
+			if len(solicitudesActivas) == 0 {
+				ManejoError(alerta, alertas, "No active data found", errorGetAll)
+				return map[string]interface{}{"Response": *alerta}
+			}
+
 			var data interface{}
-			*respuesta = make([]map[string]interface{}, len(*Solicitudes))
-			for i := 0; i < len(*Solicitudes); i++ {
-				data = solicitudTipoGetActualizacion(*Solicitudes, i, id_persona, respuesta, TipoSolicitud, Estado, errorGetAll, alertas, alerta)
+			*respuesta = make([]map[string]interface{}, len(solicitudesActivas))
+			for i := 0; i < len(solicitudesActivas); i++ {
+				data = solicitudTipoGetActualizacion(solicitudesActivas, i, id_persona, respuesta, TipoSolicitud, Estado, errorGetAll, alertas, alerta)
 				if data != nil {
 					return data
 				}
@@ -667,6 +689,20 @@ func solicitudActualizacionPostActualizacion(IdTercero interface{}, IdEstadoTipo
 			(*resultado)["Solicitud"] = (*SolicitudPost)["Data"]
 			IdSolicitud := (*SolicitudPost)["Data"].(map[string]interface{})["Id"]
 
+			// Verifica si la solicitud tiene una solicitud padre asociada
+			if SolicitudPadre, ok := SolicitudActualizacion["SolicitudPadreId"].(map[string]interface{}); ok && len(SolicitudPadre) > 0 {
+				IdSolicitudPadre := fmt.Sprintf("%v", SolicitudPadre["Id"])
+				// Inactiva la solicitud padre
+				SolicitudPadre["Activo"] = false
+				// Hace el put para inactivar la solicitud padre
+				var respuestaUpdate map[string]interface{}
+				errSolicitudPadreUpdate := request.SendJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitud/"+IdSolicitudPadre, "PUT", &respuestaUpdate, SolicitudPadre)
+				if errSolicitudPadreUpdate != nil {
+					ManejoError(alerta, alertas, "", errorGetAll, errSolicitudPadreUpdate)
+					return map[string]interface{}{"Response": *alerta}
+				}
+			}
+
 			//POST tabla solicitante
 			return solicitudPostPostActualizacion(IdTercero, IdSolicitud, IdEstadoTipoSolicitud, SolicitudJson, SolicitudEvolucionEstadoPost, resultado, SolicitantePost, errorGetAll, alertas, alerta)
 		} else {
@@ -700,16 +736,10 @@ func ManejoSolicitudesPostActualizacion(IdEstadoTipoSolicitud int, SolicitudEvol
 		//Tipo de solicitud de actualización de datos por ID
 		Referencia = "{\n\"DocumentoId\":" + fmt.Sprintf("%v", SolicitudJson.(map[string]interface{})["Documento"]) + ",\n\"DatosAnteriores\": {\n\"FechaExpedicionActual\": \"" + fmt.Sprintf("%v", SolicitudJson.(map[string]interface{})["FechaExpedicionActual"]) + "\", \n\"NumeroActual\": \"" + fmt.Sprintf("%v", SolicitudJson.(map[string]interface{})["NumeroActual"]) + "\",\n\"TipoDocumentoActual\": {\n\"Id\": " + fmt.Sprintf("%v", SolicitudJson.(map[string]interface{})["TipoDocumentoActual"].(map[string]interface{})["Id"]) + "\n}\n}, \n\"DatosNuevos\": {\n\"FechaExpedicionNuevo\": \"" + fmt.Sprintf("%v", SolicitudJson.(map[string]interface{})["FechaExpedicionNuevo"]) + "\",\n\"NumeroNuevo\": \"" + fmt.Sprintf("%v", SolicitudJson.(map[string]interface{})["NumeroNuevo"]) + "\",\n\"TipoDocumentoNuevo\": {\n\"Id\": " + fmt.Sprintf("%v", SolicitudJson.(map[string]interface{})["TipoDocumentoNuevo"].(map[string]interface{})["Id"]) + "\n}\n}\n}"
 		IdEstadoTipoSolicitud = 15
-		if Solicitud["SolicitudPadreId"] != nil {
-			IdEstadoTipoSolicitud = 33
-		}
 	} else if j == 4 {
 		//Tipo de solicitud de actualización de datos por nombre
 		Referencia = "{\n\"DocumentoId\":" + fmt.Sprintf("%v", SolicitudJson.(map[string]interface{})["Documento"]) + ",\n\"DatosAnteriores\":{\n\"NombreActual\": \"" + fmt.Sprintf("%v", SolicitudJson.(map[string]interface{})["NombreActual"]) + "\",\n\"ApellidoActual\": \"" + fmt.Sprintf("%v", SolicitudJson.(map[string]interface{})["ApellidoActual"]) + "\"\n},\n\"DatosNuevos\":{\n\"NombreNuevo\": \"" + fmt.Sprintf("%v", SolicitudJson.(map[string]interface{})["NombreNuevo"]) + "\",\n\"ApellidoNuevo\": \"" + fmt.Sprintf("%v", SolicitudJson.(map[string]interface{})["ApellidoNuevo"]) + "\"\n}\n}"
 		IdEstadoTipoSolicitud = 16
-		if Solicitud["SolicitudPadreId"] != nil {
-			IdEstadoTipoSolicitud = 32
-		}
 	}
 	SolicitudActualizacion := map[string]interface{}{}
 	IdSolicutudPadre := string("")
@@ -718,13 +748,14 @@ func ManejoSolicitudesPostActualizacion(IdEstadoTipoSolicitud int, SolicitudEvol
 		IdSolicutudPadre = Solicitud["SolicitudPadreId"].(string)
 		errSolicitudPadre := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitud/"+IdSolicutudPadre, SolicitudPadre)
 		if errSolicitudPadre == nil {
-			//POST tabla solicitud
+			//POST tabla solicitud con solicitud padre asociada
 			asignarSolicitudActualizacion(*SolicitudPadre, &SolicitudActualizacion, IdEstadoTipoSolicitud, Referencia, SolicitudJson)
 		} else {
-			//POST tabla solicitud
+			//POST tabla solicitud sin solicitud padre asociada
 			asignarSolicitudActualizacion(nil, &SolicitudActualizacion, IdEstadoTipoSolicitud, Referencia, SolicitudJson)
 		}
 	} else {
+		//POST tabla solicitud sin solicitud padre asociada
 		asignarSolicitudActualizacion(nil, &SolicitudActualizacion, IdEstadoTipoSolicitud, Referencia, SolicitudJson)
 	}
 
@@ -994,4 +1025,94 @@ func SolicitudEvaluacionPut(idSolicitud string) (APIResponseDTO requestresponse.
 		return APIResponseDTO
 	}
 	return APIResponseDTO
+}
+
+func PutSolicitudReferencia(idSolicitud string, referencia map[string]interface{}) (APIResponseDTO requestresponse.APIResponse) {
+	// Consultar solicitud por id
+	var solicitud map[string]interface{}
+	errSolicitud := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitud/"+idSolicitud, &solicitud)
+	if errSolicitud != nil {
+		return requestresponse.APIResponseDTO(false, 404, nil, errSolicitud)
+	}
+	//17 Rectificar
+	//9 Acta aprobnada
+	//1 Solicitud generada
+	//11 Solicitud rechazada
+	var estadoSolicitudGenerada int = 1
+	esUnaSolicitudModificable, err := solicitudTieneEstado(solicitud, estadoSolicitudGenerada)
+	if err != nil {
+		return requestresponse.APIResponseDTO(false, 400, nil, err)
+	}
+
+	if esUnaSolicitudModificable {
+
+		// Formatear la referencia a JSON
+		referenciaJson, errReferenciaJson := formatReferenciaJson(referencia)
+		if errReferenciaJson != nil {
+			fmt.Println("Error:", errReferenciaJson)
+			return requestresponse.APIResponseDTO(false, 400, nil, "error en la funcion del formatReferenciaJson")
+		}
+
+		// Reemplazar la referencia en la solicitud con el JSON string formateado
+		solicitud["Referencia"] = referenciaJson
+
+		fmt.Print("------------------------------")
+		jsonData, _ := json.MarshalIndent(solicitud, "", "")
+		fmt.Println(string(jsonData))
+		fmt.Println("---------------------------")
+
+		// Guardar la solicitud
+		var responseSolicitud map[string]interface{}
+		err := request.SendJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitud/"+idSolicitud, "PUT", &responseSolicitud, solicitud)
+		if err != nil {
+			fmt.Println(err)
+			return requestresponse.APIResponseDTO(false, 404, nil, err)
+		}
+
+		// Retornar respuesta exitosa
+		return requestresponse.APIResponseDTO(true, 200, nil)
+	} else {
+		return requestresponse.APIResponseDTO(false, 200, nil, "La solicitud solo se puede modificar si esta en estado 'Solicitud generada' o 'Rectificar'")
+	}
+
+}
+
+func solicitudTieneEstado(solicitud map[string]interface{}, estadoId int) (bool, error) {
+	estadoTipoSolicitudIdRequest, ok := solicitud["EstadoTipoSolicitudId"].(map[string]interface{})["Id"]
+	if !ok {
+		return false, errors.New("invalid solicitud format: missing EstadoTipoSolicitudId")
+	}
+	estadoTipoSolicitudId, _ := strconv.Atoi(fmt.Sprintf("%v", estadoTipoSolicitudIdRequest))
+	// Consultar por id a la tabla estado_tipo_solicitud del modelo "solicitudes" para obtener el estado de la solicitud
+	var estadoTipoSolicitudRequest map[string]interface{}
+	errEstadoTipoSolicitudRequest := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"estado_tipo_solicitud/"+strconv.Itoa(estadoTipoSolicitudId), &estadoTipoSolicitudRequest)
+	if errEstadoTipoSolicitudRequest != nil {
+		return false, errEstadoTipoSolicitudRequest
+	}
+	estadoIdRequest, ok := estadoTipoSolicitudRequest["Data"].(map[string]interface{})["EstadoId"].(map[string]interface{})["Id"]
+	if !ok {
+		return false, errors.New("invalid solicitud format: missing EstadoId")
+	}
+	id, _ := strconv.Atoi(fmt.Sprintf("%v", estadoIdRequest))
+	if id != estadoId {
+		return false, nil
+	} else {
+		return true, nil
+	}
+}
+
+func formatReferenciaJson(referencia map[string]interface{}) (string, error) {
+	// Serializar el mapa a JSON con indentación
+	referenciaJsonBytes, err := json.MarshalIndent(referencia, "", "    ")
+	if err != nil {
+		return "", err
+	}
+
+	// Convertir los bytes a string
+	referenciaJson := string(referenciaJsonBytes)
+
+	//Eliminar los espacios en blanco
+	referenciaJsonSinEspacios := strings.ReplaceAll(referenciaJson, " ", "")
+
+	return referenciaJsonSinEspacios, nil
 }
