@@ -36,6 +36,15 @@ func init() {
 
     beego.GlobalControllerRouter["github.com/udistrital/sga_actualizacion_dato_mid/controllers:SolicitudEvaluacionController"] = append(beego.GlobalControllerRouter["github.com/udistrital/sga_actualizacion_dato_mid/controllers:SolicitudEvaluacionController"],
         beego.ControllerComments{
+            Method: "PutSolicitudReferencia",
+            Router: "/:id_solicitud",
+            AllowHTTPMethods: []string{"put"},
+            MethodParams: param.Make(),
+            Filters: nil,
+            Params: nil})
+
+    beego.GlobalControllerRouter["github.com/udistrital/sga_actualizacion_dato_mid/controllers:SolicitudEvaluacionController"] = append(beego.GlobalControllerRouter["github.com/udistrital/sga_actualizacion_dato_mid/controllers:SolicitudEvaluacionController"],
+        beego.ControllerComments{
             Method: "GetAllSolicitudActualizacionDatos",
             Router: "/estados/:id_estado_tipo_solicitud",
             AllowHTTPMethods: []string{"get"},

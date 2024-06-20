@@ -1,9 +1,12 @@
 package controllers
 
 import (
+	"encoding/json"
+
 	"github.com/astaxie/beego"
 	"github.com/udistrital/sga_actualizacion_dato_mid/services"
 	"github.com/udistrital/utils_oas/errorhandler"
+	"github.com/udistrital/utils_oas/requestresponse"
 )
 
 // SolicitudEvaluacionController ...
@@ -154,6 +157,33 @@ func (c *SolicitudEvaluacionController) PutSolicitudEvaluacion() {
 	idSolicitud := c.Ctx.Input.Param(":id")
 
 	respuesta := services.SolicitudEvaluacionPut(idSolicitud)
+
+	c.Ctx.Output.SetStatus(respuesta.Status)
+	c.Data["json"] = respuesta
+	c.ServeJSON()
+}
+
+// PutSolicitud...
+// @Title PutSolicitud
+// @Description Modifica una solicitud existente
+// @Param   body        body    {}  true        "body Modificar solicitud content"
+// @Success 200 {}
+// @Failure 403 body is empty
+// @router /:id_solicitud [put]
+func (c *SolicitudEvaluacionController) PutSolicitudReferencia() {
+	defer errorhandler.HandlePanic(&c.Controller)
+
+	idSolicitud := c.Ctx.Input.Param(":id_solicitud")
+
+	var referencia map[string]interface{}
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &referencia); err != nil {
+		c.Ctx.Output.SetStatus(400)
+		c.Data["json"] = requestresponse.APIResponseDTO(false, 400, nil, "Error en el formato de la solicitud")
+		c.ServeJSON()
+		return
+	}
+
+	respuesta := services.PutSolicitudReferencia(idSolicitud, referencia)
 
 	c.Ctx.Output.SetStatus(respuesta.Status)
 	c.Data["json"] = respuesta

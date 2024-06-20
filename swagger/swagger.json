@@ -185,6 +185,32 @@
                         "description": "body is empty"
                     }
                 }
+            },
+            "put": {
+                "tags": [
+                    "solicitudes"
+                ],
+                "description": "Modifica una solicitud existente",
+                "operationId": "SolicitudEvaluacionController.PutSolicitud",
+                "parameters": [
+                    {
+                        "in": "body",
+                        "name": "body",
+                        "description": "body Modificar solicitud content",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/{}"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{}"
+                    },
+                    "403": {
+                        "description": "body is empty"
+                    }
+                }
             }
         },
         "/solicitudes/{id}/evaluacion": {
