@@ -437,10 +437,26 @@ func ManejoSolicitudesGetAll(Solicitudes *[]map[string]interface{}, Observacion 
 	errSolicitud := request.GetJson("http://"+beego.AppConfig.String("SolicitudDocenteService")+"solicitante?query=SolicitudId.EstadoTipoSolicitudId.Id:"+fmt.Sprintf("%v", id_estado_tipo_sol)+"&sortby:Id&order:asc&limit=0", Solicitudes)
 	if errSolicitud == nil {
 		if *Solicitudes != nil && fmt.Sprintf("%v", (*Solicitudes)[0]) != "map[]" {
+
+			// Filtrar solicitudes activas de actualización de datos
+			var solicitudesActivas []map[string]interface{}
+			for _, solicitud := range *Solicitudes {
+				if solicitudId, ok := solicitud["SolicitudId"].(map[string]interface{}); ok {
+					if activo, ok := solicitudId["Activo"].(bool); ok && activo {
+						solicitudesActivas = append(solicitudesActivas, solicitud)
+					}
+				}
+			}
+
+			if len(solicitudesActivas) == 0 {
+				ManejoError(alerta, alertas, "No active data found", errorGetAll)
+				return map[string]interface{}{"Response": *alerta}
+			}
+
 			var data interface{}
-			*respuesta = make([]map[string]interface{}, len(*Solicitudes))
-			for i := 0; i < len(*Solicitudes); i++ {
-				data = solicitudTipoGetAll(*Solicitudes, i, Observacion, respuesta, TipoSolicitud, Estado, errorGetAll, alertas, alerta)
+			*respuesta = make([]map[string]interface{}, len(solicitudesActivas))
+			for i := 0; i < len(solicitudesActivas); i++ {
+				data = solicitudTipoGetAll(solicitudesActivas, i, Observacion, respuesta, TipoSolicitud, Estado, errorGetAll, alertas, alerta)
 				if data != nil {
 					return data
 				}
